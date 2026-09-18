@@ -4,6 +4,7 @@
 import type { Category, Profile, TaxConfig, Transaction } from './types';
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES } from './constants';
 import { generateId } from './utils';
+import { calculateDiscount } from './thaiChuayThai';
 
 export const DEMO_USER_ID = 'demo-user-001';
 
@@ -12,6 +13,7 @@ export const DEMO_PROFILE: Profile = {
   display_name: 'คุณสมชาย มีเงิน',
   avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 };
 
 export function createInitialCategories(userId: string = DEMO_USER_ID): Category[] {
@@ -96,6 +98,9 @@ export function createInitialTransactions(userId: string = DEMO_USER_ID, categor
   const salaryCat = getCatId('เงินเดือน');
   const freelanceCat = getCatId('งานฟรีแลนซ์ / รายได้เสริม');
 
+  const foodDiscount = calculateDiscount(120);
+  const coffeeDiscount = calculateDiscount(80, foodDiscount.effectiveDiscount, foodDiscount.effectiveDiscount);
+
   return [
     {
       id: generateId(),
@@ -152,8 +157,8 @@ export function createInitialTransactions(userId: string = DEMO_USER_ID, categor
       transaction_date: todayStr,
       is_salary: false,
       is_thai_chuay_thai: true,
-      thai_chuay_thai_discount: 72, // 60%
-      net_amount: 48, // 40%
+      thai_chuay_thai_discount: foodDiscount.effectiveDiscount,
+      net_amount: foodDiscount.netAmount,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
@@ -167,8 +172,8 @@ export function createInitialTransactions(userId: string = DEMO_USER_ID, categor
       transaction_date: todayStr,
       is_salary: false,
       is_thai_chuay_thai: true,
-      thai_chuay_thai_discount: 48, // 60%
-      net_amount: 32, // 40%
+      thai_chuay_thai_discount: coffeeDiscount.effectiveDiscount,
+      net_amount: coffeeDiscount.netAmount,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },

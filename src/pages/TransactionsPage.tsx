@@ -2,7 +2,7 @@
 // Transactions management page with quick selection chips, Thai Chuay Thai quota tracker, and list
 
 import React, { useState } from 'react';
-import { Plus, Sparkles, Filter, AlertTriangle } from 'lucide-react';
+import { Plus, AlertTriangle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -10,8 +10,6 @@ import { TransactionForm } from '../components/transactions/TransactionForm';
 import { QuickSelectPanel } from '../components/transactions/QuickSelectPanel';
 import { TransactionList } from '../components/transactions/TransactionList';
 import { useTransactions, type TransactionFilter } from '../hooks/useTransactions';
-import { useThaiChuayThai } from '../hooks/useThaiChuayThai';
-import { formatCurrency } from '../lib/utils';
 import type { Transaction, TransactionType } from '../lib/types';
 
 export const TransactionsPage: React.FC = () => {
@@ -29,8 +27,6 @@ export const TransactionsPage: React.FC = () => {
     updateTransaction,
     deleteTransaction,
   } = useTransactions();
-
-  const { quota } = useThaiChuayThai();
 
   const handleOpenAdd = () => {
     setEditingTransaction(null);
@@ -77,71 +73,24 @@ export const TransactionsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner: Thai Chuay Thai Quota Status Card */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 p-5 text-white shadow-md shadow-indigo-500/10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-blue-100">
-                <Sparkles className="h-4 w-4" />
-                <span>โครงการคนละครึ่ง / ไทยช่วยไทย (60/40)</span>
-              </div>
-              <h2 className="text-xl font-bold mt-1 tracking-tight">
-                รัฐช่วยจ่าย 60% — คุณจ่ายเพียง 40%
-              </h2>
-              <p className="text-xs text-blue-100/90 mt-0.5">
-                จำกัดส่วนลดสูงสุด 200 บาท/วัน และไม่เกิน 1,000 บาท/เดือน
-              </p>
-            </div>
-
-            <Button
-              onClick={handleOpenAdd}
-              className="bg-white text-indigo-700 hover:bg-blue-50 shadow-sm shrink-0"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              บันทึกรายการใหม่
-            </Button>
-          </div>
-
-          {/* Quota Progress Numbers */}
-          <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/20 text-xs">
-            <div>
-              <span className="text-blue-200 block text-[11px]">โควตารายวันคงเหลือวันนี้</span>
-              <div className="text-base font-bold tabular-nums">
-                {formatCurrency(quota.dailyRemaining)}
-                <span className="text-[11px] font-normal text-blue-200 ml-1">
-                  / {formatCurrency(quota.dailyCap)}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <span className="text-blue-200 block text-[11px]">โควตารายเดือนคงเหลือ</span>
-              <div className="text-base font-bold tabular-nums">
-                {formatCurrency(quota.monthlyRemaining)}
-                <span className="text-[11px] font-normal text-blue-200 ml-1">
-                  / {formatCurrency(quota.monthlyCap)}
-                </span>
-              </div>
-            </div>
-          </div>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            รายการบันทึก
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            บันทึกและจัดการรายรับ-รายจ่ายทั้งหมดของคุณ
+          </p>
         </div>
 
-        {/* Quick Add Card */}
-        <Card className="flex flex-col justify-between">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">เพิ่มรายการด่วน</CardTitle>
-            <CardDescription className="text-xs">
-              บันทึกรายรับหรือรายจ่ายทันใจในไม่กี่วินาที
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <Button onClick={handleOpenAdd} className="w-full">
-              <Plus className="h-4 w-4 mr-1.5" />
-              เปิดแบบฟอร์มบันทึก
-            </Button>
-          </CardContent>
-        </Card>
+        <Button
+          onClick={handleOpenAdd}
+          className="gap-1.5 self-start sm:self-auto shadow-xs"
+        >
+          <Plus className="h-4 w-4" />
+          <span>บันทึกรายการใหม่</span>
+        </Button>
       </div>
 
       {/* Quick Select Chips */}

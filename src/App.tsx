@@ -1,10 +1,11 @@
 // src/App.tsx
 // Application root with React Router HashRouter, Code Splitting (React.lazy), and AuthGuard
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthGuard } from './components/layout/AuthGuard';
 import { AppShell } from './components/layout/AppShell';
+import { useAppStore } from './stores/useAppStore';
 
 // Code-split pages for performance
 const DashboardPage = lazy(() =>
@@ -39,6 +40,16 @@ const PageLoadingSpinner: React.FC = () => (
 );
 
 export function App() {
+  const theme = useAppStore((s) => s.theme);
+
+  // Keep <html> class in sync with stored theme state
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
   return (
     <HashRouter>
       <Suspense fallback={<PageLoadingSpinner />}>

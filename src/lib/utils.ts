@@ -15,7 +15,7 @@ export function formatCurrency(amount: number, showDecimals: boolean = false): s
   const absAmount = Math.abs(amount);
   const formatted = new Intl.NumberFormat('th-TH', {
     minimumFractionDigits: showDecimals ? 2 : 0,
-    maximumFractionDigits: showDecimals ? 2 : 2,
+    maximumFractionDigits: showDecimals ? 2 : 0,
   }).format(absAmount);
 
   const sign = amount < 0 ? '-' : '';
@@ -38,7 +38,20 @@ export function formatNumber(amount: number, decimals: number = 0): string {
  */
 export function formatThaiDate(dateStr: string | Date, style: 'short' | 'medium' | 'long' = 'medium'): string {
   try {
-    const date = typeof dateStr === 'string' ? parseISO(dateStr) : dateStr;
+    let date: Date;
+    if (typeof dateStr === 'string') {
+      const parts = dateStr.slice(0, 10).split('-');
+      if (parts.length === 3 && parts[0].length === 4) {
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const d = parseInt(parts[2], 10);
+        date = new Date(y, m, d);
+      } else {
+        date = parseISO(dateStr);
+      }
+    } else {
+      date = dateStr;
+    }
     const christianYear = date.getFullYear();
     const buddhistYear = christianYear + 543;
 

@@ -62,9 +62,9 @@ export const ReportsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Controls: Period selector & Date Range */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Period Buttons */}
-        <div className="flex rounded-2xl bg-slate-100 p-1 dark:bg-slate-800/80">
+        <div className="flex rounded-2xl bg-slate-100 p-1 dark:bg-slate-800/80 overflow-x-auto touch-scroll no-scrollbar">
           {(
             [
               { id: 'this_month', label: 'เดือนนี้' },
@@ -77,7 +77,7 @@ export const ReportsPage: React.FC = () => {
               key={p.id}
               onClick={() => setPeriod(p.id)}
               className={cn(
-                'rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all',
+                'rounded-xl px-3.5 py-2 text-xs font-semibold transition-all shrink-0 min-h-[38px] touch-manipulation active:scale-95',
                 period === p.id
                   ? 'bg-white text-emerald-700 shadow-2xs dark:bg-slate-900 dark:text-emerald-300'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -88,7 +88,7 @@ export const ReportsPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 shrink-0">
           <Calendar className="h-4 w-4 text-slate-400" />
           <span>
             {formatThaiDate(startDate, 'short')} — {formatThaiDate(endDate, 'short')}
@@ -99,8 +99,8 @@ export const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 overflow-x-auto pb-px">
+      {/* Tabs Navigation: Touch-scrollable on mobile / iPad */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-1 sm:gap-2 overflow-x-auto touch-scroll no-scrollbar -mx-1 px-1 pb-px">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -109,7 +109,7 @@ export const ReportsPage: React.FC = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-all shrink-0',
+                'flex items-center gap-2 border-b-2 px-3.5 sm:px-4 py-3 text-xs sm:text-sm font-semibold transition-all shrink-0 min-h-[44px] touch-manipulation active:scale-[0.98]',
                 isActive
                   ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -127,51 +127,51 @@ export const ReportsPage: React.FC = () => {
         <div className="space-y-6 animate-in fade-in duration-150">
           {/* Summary Metric Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="border-emerald-100 dark:border-emerald-950 bg-gradient-to-br from-emerald-50/40 to-white dark:from-emerald-950/20 dark:to-slate-900">
+            <Card>
               <CardHeader className="pb-1">
-                <CardDescription className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                <CardDescription className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   รายรับรวม
                 </CardDescription>
-                <CardTitle className="text-2xl text-emerald-600 dark:text-emerald-400">
+                <CardTitle className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
                   {formatCurrency(summary.totalIncome)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[11px] text-slate-500">รวมรายรับและเงินเดือนในช่วงเวลานี้</p>
+                <p className="text-[11px] text-slate-400">รวมรายรับและเงินเดือนในช่วงเวลานี้</p>
               </CardContent>
             </Card>
 
-            <Card className="border-rose-100 dark:border-rose-950 bg-gradient-to-br from-rose-50/40 to-white dark:from-rose-950/20 dark:to-slate-900">
+            <Card>
               <CardHeader className="pb-1">
-                <CardDescription className="text-xs text-rose-700 dark:text-rose-400 font-medium">
+                <CardDescription className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   รายจ่ายสุทธิ
                 </CardDescription>
-                <CardTitle className="text-2xl text-rose-600 dark:text-rose-400">
+                <CardTitle className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
                   {formatCurrency(summary.totalExpense)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[11px] text-slate-500">ยอดที่จ่ายจริงหลังหักเงินช่วยจ่าย</p>
+                <p className="text-[11px] text-slate-400">ยอดที่จ่ายจริงหลังหักเงินช่วยจ่าย</p>
               </CardContent>
             </Card>
 
-            <Card className="border-indigo-100 dark:border-indigo-950 bg-gradient-to-br from-indigo-50/40 to-white dark:from-indigo-950/20 dark:to-slate-900">
+            <Card>
               <CardHeader className="pb-1">
-                <CardDescription className="text-xs text-indigo-700 dark:text-indigo-400 font-medium">
+                <CardDescription className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   เงินคงเหลือสุทธิ
                 </CardDescription>
                 <CardTitle
                   className={cn(
-                    'text-2xl',
-                    summary.netSavings >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600'
+                    'text-2xl font-bold tracking-tight tabular-nums',
+                    summary.netSavings >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600'
                   )}
                 >
                   {formatCurrency(summary.netSavings)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[11px] text-slate-500">
-                  อัตราการออม: <span className="font-semibold">{summary.savingsRate}%</span> ของรายรับ
+                <p className="text-[11px] text-slate-400">
+                  อัตราการออม: <span className="font-semibold text-slate-700 dark:text-slate-300">{summary.savingsRate}%</span> ของรายรับ
                 </p>
               </CardContent>
             </Card>
@@ -179,15 +179,15 @@ export const ReportsPage: React.FC = () => {
 
           {/* Thai Chuay Thai Savings Callout */}
           {summary.totalThaiChuayThaiDiscount > 0 && (
-            <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white shadow-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
-                <Sparkles className="h-5 w-5 text-white" />
+            <div className="flex items-center gap-3 rounded-2xl border border-blue-200/80 bg-blue-50/50 dark:border-blue-800/80 dark:bg-blue-950/20 p-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                <Sparkles className="h-4.5 w-4.5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-blue-100">
+                <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">
                   สิทธิประโยชน์โครงการคนละครึ่ง / ไทยช่วยไทย (60/40)
                 </p>
-                <p className="text-sm font-bold">
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                   รัฐช่วยคุณประหยัดเงินไปได้ทั้งหมด {formatCurrency(summary.totalThaiChuayThaiDiscount)}
                 </p>
               </div>

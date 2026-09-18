@@ -5,6 +5,18 @@ import type { Category, TaxCalculationResult, Transaction } from './types';
 import { formatThaiDate } from './utils';
 
 /**
+ * Escapes CSV special characters and neutralizes CSV formula injection
+ */
+export function sanitizeCsvField(val: string | null | undefined): string {
+  let text = (val || '').replace(/"/g, '""');
+  // If field starts with formula trigger characters (=, +, -, @, tab, newline), prefix with single quote
+  if (/^[=+\-@\t\r]/.test(text)) {
+    text = `'${text}`;
+  }
+  return `"${text}"`;
+}
+
+/**
  * Converts transactions into formatted CSV string with UTF-8 BOM
  */
 export function exportTransactionsToCSV(
@@ -32,8 +44,8 @@ export function exportTransactionsToCSV(
     return [
       `"${tx.transaction_date}"`,
       `"${typeLabel}"`,
-      `"${categoryName}"`,
-      `"${(tx.description || '').replace(/"/g, '""')}"`,
+      sanitizeCsvField(categoryName),
+      sanitizeCsvField(tx.description),
       tx.amount.toFixed(2),
       `"${isThaiChuayThai}"`,
       (tx.thai_chuay_thai_discount || 0).toFixed(2),

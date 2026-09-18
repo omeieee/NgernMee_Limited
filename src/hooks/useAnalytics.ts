@@ -4,12 +4,13 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import { useCategories } from './useCategories';
+import { calculateTax } from '../lib/thaiTax';
 import type { Transaction } from '../lib/types';
 
 export type TimePeriod = 'this_month' | 'last_month' | 'this_year' | 'all' | 'custom';
 
 export function useAnalytics(period: TimePeriod = 'this_month', customStart?: string, customEnd?: string) {
-  const { transactions, getTaxCalculation } = useAppStore();
+  const { transactions, taxConfig } = useAppStore();
   const { categoriesMap, getCategoryPathString } = useCategories();
 
   // Determine active date range
@@ -183,10 +184,14 @@ export function useAnalytics(period: TimePeriod = 'this_month', customStart?: st
       .slice(0, 10);
   }, [periodTransactions]);
 
-  // Tax calculation
+  // Tax calculation memoized with stable state dependencies
   const taxCalculation = useMemo(() => {
-    return getTaxCalculation();
-  }, [getTaxCalculation]);
+    const salaryTransactionsSum = transactions
+      .filter((tx) => tx.type === 'income' && tx.is_salary && tx.transaction_date.startsWith(String(taxConfig.tax_year)))
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const grossIncome = salaryTransactionsSum > 0 ? salaryTransactionsSum : taxConfig.annual_salary;
+    return calculateTax(grossIncome, taxConfig.additional_deductions, taxConfig.tax_year);
+  }, [transactions, taxConfig]);
 
   return {
     startDate,

@@ -5,18 +5,31 @@ import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAppStore } from '../stores/useAppStore';
 
+function getOfflineUserId(email: string): string {
+  try {
+    const sanitized = email.toLowerCase().trim();
+    const encoded = typeof btoa !== 'undefined'
+      ? btoa(encodeURIComponent(sanitized)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 20)
+      : sanitized.replace(/[^a-zA-Z0-9]/g, '');
+    return `user-${encoded}`;
+  } catch {
+    return `user-offline`;
+  }
+}
+
 export function useAuth() {
-  const { user, profile, isDemoMode, setUser, setDemoMode, signOut: storeSignOut } = useAppStore();
+  const { user, profile, isDemoMode, setUser, setDemoMode, signOut: storeSignOut, syncWithSupabase } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
-    // Check existing session
+    // Check existing session on mount and sync real data from Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user && !isDemoMode) {
         setUser({ id: session.user.id, email: session.user.email || '' });
+        syncWithSupabase().catch(console.error);
       }
     });
 
@@ -25,21 +38,23 @@ export function useAuth() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user && !isDemoMode) {
         setUser({ id: session.user.id, email: session.user.email || '' });
+        syncWithSupabase().catch(console.error);
       } else if (!session && !isDemoMode) {
         setUser(null, null);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [isDemoMode, setUser]);
+  }, [isDemoMode, setUser, syncWithSupabase]);
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     setAuthError(null);
 
     if (!isSupabaseConfigured) {
-      // Offline fallback: allow direct sign in
-      setUser({ id: 'user-' + Date.now(), email });
+      // Deterministic offline fallback: keeps data accessible across reloads
+      const offlineId = getOfflineUserId(email);
+      setUser({ id: offlineId, email });
       setLoading(false);
       return true;
     }
@@ -53,6 +68,8 @@ export function useAuth() {
       }
       if (data.user) {
         setUser({ id: data.user.id, email: data.user.email || email });
+        // Fetch the real profile name, categories and transactions from Supabase
+        await syncWithSupabase();
       }
       setLoading(false);
       return true;
@@ -69,11 +86,13 @@ export function useAuth() {
     setAuthError(null);
 
     if (!isSupabaseConfigured) {
-      setUser({ id: 'user-' + Date.now(), email }, {
-        id: 'user-' + Date.now(),
+      const offlineId = getOfflineUserId(email);
+      setUser({ id: offlineId, email }, {
+        id: offlineId,
         display_name: displayName || email.split('@')[0],
         avatar_url: null,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
       setLoading(false);
       return true;
@@ -98,6 +117,9 @@ export function useAuth() {
 
       if (data.user) {
         setUser({ id: data.user.id, email: data.user.email || email });
+        // The DB trigger seeds the profile + categories; fetch them now so the
+        // dashboard shows the correct name (from signUp metadata) on first load.
+        await syncWithSupabase();
       }
       setLoading(false);
       return true;

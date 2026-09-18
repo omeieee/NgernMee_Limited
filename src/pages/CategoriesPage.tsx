@@ -69,36 +69,36 @@ export const CategoriesPage: React.FC = () => {
       {/* Page Header Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Tab Switcher */}
-        <div className="flex rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-800/80 max-w-sm">
+        <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-slate-800/80 w-full sm:max-w-sm">
           <button
             onClick={() => setActiveTab('expense')}
             className={cn(
-              'flex flex-1 items-center justify-center gap-2 rounded-xl py-2 px-4 text-xs font-semibold transition-all',
+              'flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium transition-all min-h-[44px] touch-manipulation active:scale-[0.98]',
               activeTab === 'expense'
-                ? 'bg-white text-rose-600 shadow-xs dark:bg-slate-900 dark:text-rose-400'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white font-semibold'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
             )}
           >
-            <ArrowDownCircle className="h-4 w-4" />
-            <span>หมวดหมู่รายจ่าย ({categories.filter((c) => c.type === 'expense').length})</span>
+            <ArrowDownCircle className={cn('h-4 w-4', activeTab === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400')} />
+            <span>รายจ่าย ({categories.filter((c) => c.type === 'expense').length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('income')}
             className={cn(
-              'flex flex-1 items-center justify-center gap-2 rounded-xl py-2 px-4 text-xs font-semibold transition-all',
+              'flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium transition-all min-h-[44px] touch-manipulation active:scale-[0.98]',
               activeTab === 'income'
-                ? 'bg-white text-emerald-600 shadow-xs dark:bg-slate-900 dark:text-emerald-400'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white font-semibold'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
             )}
           >
-            <ArrowUpCircle className="h-4 w-4" />
-            <span>หมวดหมู่รายรับ ({categories.filter((c) => c.type === 'income').length})</span>
+            <ArrowUpCircle className={cn('h-4 w-4', activeTab === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400')} />
+            <span>รายรับ ({categories.filter((c) => c.type === 'income').length})</span>
           </button>
         </div>
 
         {/* Add Category Button */}
-        <Button onClick={() => handleOpenAdd(null)}>
+        <Button onClick={() => handleOpenAdd(null)} className="min-h-[44px] touch-manipulation w-full sm:w-auto font-semibold">
           <Plus className="h-4 w-4 mr-1.5" />
           เพิ่มหมวดหมู่{activeTab === 'expense' ? 'รายจ่าย' : 'รายรับ'}
         </Button>

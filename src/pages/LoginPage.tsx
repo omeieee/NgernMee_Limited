@@ -54,23 +54,23 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 via-slate-50 to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/30">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
       <div className="w-full max-w-md space-y-6">
         {/* App Branding */}
         <div className="text-center space-y-2">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-600/30">
-            <Coins className="h-7 w-7" />
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xs">
+            <Coins className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
             {APP_NAME}
           </h1>
-          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xs mx-auto">
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
             {APP_TAGLINE}
           </p>
         </div>
 
         {/* Auth Card */}
-        <Card className="shadow-lg border-slate-200/80 dark:border-slate-800">
+        <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
           <CardHeader className="text-center pb-2">
             <CardTitle>{isRegister ? 'สมัครสมาชิกใหม่' : 'เข้าสู่ระบบ'}</CardTitle>
             <CardDescription>
@@ -115,7 +115,7 @@ export const LoginPage: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
 
-              <Button type="submit" className="w-full mt-2" isLoading={loading}>
+              <Button type="submit" className="w-full mt-2 min-h-[44px] touch-manipulation font-semibold text-sm" isLoading={loading}>
                 {isRegister ? (
                   <>
                     <UserPlus className="h-4 w-4 mr-1.5" />
@@ -144,10 +144,10 @@ export const LoginPage: React.FC = () => {
               variant="outline"
               type="button"
               onClick={handleDemoAccess}
-              className="w-full border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100"
+              className="w-full text-slate-700 dark:text-slate-200 min-h-[44px] touch-manipulation font-medium text-xs sm:text-sm"
             >
-              <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              เข้าทดลองใช้งานทันที (Demo Mode)
+              <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mr-1.5" />
+              <span>เข้าทดลองใช้งานทันที (Demo Mode)</span>
             </Button>
 
             {/* Features Highlight */}

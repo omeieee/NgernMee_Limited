@@ -1,11 +1,11 @@
 // src/components/layout/AppShell.tsx
 // Responsive App layout shell with desktop sidebar and mobile bottom nav
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
-import { Settings, ShieldCheck, Sun, Moon, Coins } from 'lucide-react';
+import { Settings, ShieldCheck, Sun, Moon, Coins, Menu } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_NAME } from '../../lib/constants';
@@ -25,44 +25,58 @@ export const AppShell: React.FC = () => {
   const currentInfo = PAGE_TITLES[currentPath] || { title: APP_NAME, subtitle: 'ระบบการเงินส่วนบุคคล' };
   const { theme, toggleTheme } = useAppStore();
   const { isDemoMode } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 flex">
-      {/* Desktop Sidebar */}
-      <Sidebar />
+      {/* Sidebar: Fixed on desktop/iPad Pro landscape (>=1024px), Slide-out Drawer on iPad portrait & mobile (<1024px) */}
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* Main Content Area */}
-      <div className="flex-1 md:pl-64 flex flex-col min-h-screen">
+      <div className="flex-1 lg:pl-64 flex flex-col min-h-screen w-full min-w-0">
         {/* Top Navbar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 md:px-8 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/80">
-          <div className="flex items-center gap-3">
-            <div className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white">
+        <header className="sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] items-center justify-between border-b border-slate-200/70 bg-white/90 px-3.5 sm:px-6 lg:px-8 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/90 transition-colors">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            {/* Hamburger Menu Toggle on iPad & Mobile */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors touch-manipulation active:scale-95"
+              title="เปิดเมนูนำทาง"
+              aria-label="เปิดเมนูนำทาง"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
+            <div className="hidden sm:flex lg:hidden h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
               <Coins className="h-4 w-4" />
             </div>
-            <div>
-              <h1 className="text-base md:text-lg font-bold text-slate-900 dark:text-white leading-tight">
+
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white leading-tight truncate">
                 {currentInfo.title}
               </h1>
-              <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400">
+              <p className="hidden sm:block text-[11px] text-slate-400 dark:text-slate-500 truncate">
                 {currentInfo.subtitle}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {isDemoMode && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 px-2.5 py-1 text-xs font-medium border border-amber-200 dark:border-amber-800">
-                <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-1 text-[11px] font-medium border border-slate-200 dark:border-slate-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                 <span className="hidden sm:inline">โหมดทดลองใช้งาน</span>
                 <span className="sm:hidden">Demo</span>
               </span>
             )}
 
-            {/* Mobile dark mode toggle */}
+            {/* Mobile/iPad dark mode toggle */}
             <button
               onClick={toggleTheme}
-              className="md:hidden rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors touch-manipulation active:scale-95"
               title="สลับโหมดสี"
+              aria-label="สลับโหมดสี"
             >
               {theme === 'dark' ? <Moon className="h-4 w-4 text-amber-400" /> : <Sun className="h-4 w-4 text-amber-500" />}
             </button>
@@ -70,8 +84,9 @@ export const AppShell: React.FC = () => {
             {/* Settings shortcut */}
             <Link
               to="/settings"
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors touch-manipulation active:scale-95"
               title="ตั้งค่า"
+              aria-label="ตั้งค่า"
             >
               <Settings className="h-4 w-4" />
             </Link>
@@ -79,13 +94,14 @@ export const AppShell: React.FC = () => {
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-12 max-w-7xl w-full mx-auto animate-in fade-in duration-200">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-8 lg:pb-12 max-w-7xl w-full mx-auto animate-in fade-in duration-200">
           <Outlet />
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation (screens < 768px) */}
       <BottomNav />
     </div>
   );
 };
+

@@ -40,61 +40,70 @@ export const TaxPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Banner: Real-time Tax Outcome Summary */}
-      <div className="rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-6 text-white shadow-lg shadow-emerald-700/10">
+      <Card className="p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-100">
-              <Calculator className="h-4 w-4" />
-              <span>ประมาณการภาษีเงินได้บุคคลธรรมดา ปีภาษี {taxConfig.tax_year}</span>
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] px-2.5 py-0.5 font-medium border border-slate-200 dark:border-slate-700">
+                <Calculator className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>ประมาณการภาษีเงินได้บุคคลธรรมดา ปีภาษี {taxConfig.tax_year}</span>
+              </span>
+              <span className="inline-flex items-center rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] px-2 py-0.5 font-semibold border border-emerald-200/60 dark:border-emerald-800/60">
+                Effective Rate: {calculation.effectiveRate}%
+              </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              ภาษีที่ต้องชำระ: {formatCurrency(calculation.totalTax)}
-            </h2>
-            <p className="text-xs text-emerald-100 max-w-xl leading-relaxed">
-              อัตราภาษีที่แท้จริง (Effective Tax Rate):{' '}
-              <strong className="text-white text-sm">{calculation.effectiveRate}%</strong> | เงินได้สุทธิที่ต้องเสียภาษี:{' '}
-              {formatCurrency(calculation.netTaxableIncome)}
+
+            <div className="flex flex-wrap items-baseline gap-3 pt-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400">ภาษีที่ต้องชำระ:</span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
+                {formatCurrency(calculation.totalTax)}
+              </h2>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              ฐานเงินได้สุทธิที่นำไปคำนวณภาษี: <strong className="font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(calculation.netTaxableIncome)}</strong>
             </p>
           </div>
 
-          {/* Export & Action Buttons */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          {/* Export Button */}
+          <div className="flex items-center gap-2.5 shrink-0 self-stretch sm:self-auto">
             <Button
               onClick={handleExport}
-              className="bg-white text-emerald-800 hover:bg-emerald-50 shadow-sm"
+              variant="outline"
+              className="text-xs font-medium min-h-[44px] touch-manipulation w-full sm:w-auto"
             >
-              <Download className="h-4 w-4 mr-1.5" />
-              ดาวน์โหลดรายงาน CSV
+              <Download className="h-4 w-4 mr-1.5 text-slate-500" />
+              <span>ดาวน์โหลดรายงานภาษี (CSV)</span>
             </Button>
           </div>
         </div>
 
         {/* 4 Summary Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/20 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-xs">
           <div>
-            <span className="text-emerald-200 block text-[11px]">เงินได้รวมทั้งปี</span>
-            <div className="text-base font-bold tabular-nums">{formatCurrency(calculation.grossIncome)}</div>
+            <span className="text-slate-400 dark:text-slate-500 block text-[11px]">เงินได้รวมทั้งปี</span>
+            <div className="text-base font-semibold text-slate-900 dark:text-slate-100 tabular-nums mt-0.5">{formatCurrency(calculation.grossIncome)}</div>
           </div>
           <div>
-            <span className="text-emerald-200 block text-[11px]">ลดหย่อนมาตรฐาน</span>
-            <div className="text-base font-bold tabular-nums">
+            <span className="text-slate-400 dark:text-slate-500 block text-[11px]">ลดหย่อนมาตรฐาน</span>
+            <div className="text-base font-semibold text-slate-900 dark:text-slate-100 tabular-nums mt-0.5">
               {formatCurrency(calculation.standardDeductions)}
             </div>
           </div>
           <div>
-            <span className="text-emerald-200 block text-[11px]">ลดหย่อนเพิ่มเติม</span>
-            <div className="text-base font-bold tabular-nums">
+            <span className="text-slate-400 dark:text-slate-500 block text-[11px]">ลดหย่อนเพิ่มเติม</span>
+            <div className="text-base font-semibold text-slate-900 dark:text-slate-100 tabular-nums mt-0.5">
               {formatCurrency(calculation.additionalDeductionsTotal)}
             </div>
           </div>
           <div>
-            <span className="text-emerald-200 block text-[11px]">รวมลดหย่อนทั้งสิ้น</span>
-            <div className="text-base font-bold tabular-nums text-emerald-100">
+            <span className="text-slate-400 dark:text-slate-500 block text-[11px]">รวมลดหย่อนทั้งสิ้น</span>
+            <div className="text-base font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
               {formatCurrency(calculation.totalDeductions)}
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Main Sections: Income Settings & Bracket Visualization */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -144,13 +153,14 @@ export const TaxPage: React.FC = () => {
                     เงินเดือนประจำ (บาท / เดือน)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-2.5 text-sm font-semibold text-slate-400">฿</span>
+                    <span className="absolute left-3.5 top-3 sm:top-2.5 text-sm font-semibold text-slate-400">฿</span>
                     <input
                       type="number"
+                      inputMode="decimal"
                       disabled={useAutoSalary && transactionSalaryTotal > 0}
                       value={taxConfig.monthly_salary || ''}
                       onChange={(e) => updateSalary(parseFloat(e.target.value) || 0)}
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 disabled:opacity-50 tabular-nums"
+                      className="h-11 sm:h-10 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-base sm:text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 disabled:opacity-50 tabular-nums touch-manipulation"
                     />
                   </div>
                 </div>
@@ -159,7 +169,7 @@ export const TaxPage: React.FC = () => {
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                     เงินได้ทั้งปีที่ใช้คำนวณ (บาท)
                   </label>
-                  <div className="h-10 flex items-center px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                  <div className="h-11 sm:h-10 flex items-center px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                     {formatCurrency(grossIncome)}
                   </div>
                 </div>
@@ -202,13 +212,13 @@ export const TaxPage: React.FC = () => {
 
           {/* Tax Optimization Suggestions */}
           {taxSavingTips.length > 0 && (
-            <Card className="border-amber-200/80 bg-amber-50/40 dark:border-amber-900/60 dark:bg-amber-950/20">
+            <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-1.5 text-amber-900 dark:text-amber-200">
+                <CardTitle className="text-base flex items-center gap-2 text-slate-900 dark:text-slate-100">
                   <Sparkles className="h-4 w-4 text-amber-500" />
                   <span>คำแนะนำเพื่อประหยัดภาษี</span>
                 </CardTitle>
-                <CardDescription className="text-amber-700/80 dark:text-amber-400">
+                <CardDescription>
                   โอกาสในการลดหย่อนภาษีเพิ่มเติมที่คุณยังใช้ไม่เต็มสิทธิ์
                 </CardDescription>
               </CardHeader>
@@ -216,10 +226,10 @@ export const TaxPage: React.FC = () => {
                 {taxSavingTips.map((tip) => (
                   <div
                     key={tip.title}
-                    className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/80 text-xs space-y-1"
+                    className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 text-xs space-y-1"
                   >
-                    <h5 className="font-bold text-slate-900 dark:text-slate-100">{tip.title}</h5>
-                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{tip.desc}</p>
+                    <h5 className="font-semibold text-slate-900 dark:text-slate-100">{tip.title}</h5>
+                    <p className="text-slate-500 dark:text-slate-400 leading-relaxed">{tip.desc}</p>
                   </div>
                 ))}
               </CardContent>

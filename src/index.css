@@ -1,49 +1,82 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Day Mode: Warm Minimal Neutrals from 10-Tone Palette (ถนอมสายตา ไม่แสบตา) */
+  --color-slate-50: #FAF6EE;   /* Light Canvas: Warm Linen Cream */
+  --color-slate-100: #F2EBE1;  /* Light Neutral Pill / Surface */
+  --color-slate-200: #E4DCD1;  /* Light Greige Border */
+  --color-slate-300: #D1C7BA;  /* Warm Divider */
+
+  /* Dark Mode: Extracted directly from User Reference Screenshot */
+  --color-slate-400: #9E9689;  /* Soft Muted Label Text (#9E9689) */
+  --color-slate-500: #766F63;  /* Secondary Label Text */
+  --color-slate-600: #524C43;
+  --color-slate-700: #38332C;  /* Inactive Numbers / Dark Input Border */
+  --color-slate-800: #26231C;  /* Card Border & Inactive Container (#26231C) */
+  --color-slate-900: #16140F;  /* Card & Sidebar Dark Surface (#16140F) */
+  --color-slate-950: #0D0C0B;  /* Main Canvas Background (#0D0C0B Deep Obsidian) */
+
+  /* Prominent Button: Electric Mint Jade Green (from reference screenshot #3BB974) */
+  --color-emerald-50: #EBF8F1;
+  --color-emerald-100: #D0F2E0;
+  --color-emerald-200: #A5E5C2;
+  --color-emerald-300: #74D4A1;
+  --color-emerald-400: #4EC786;
+  --color-emerald-500: #3BB974;  /* Vibrant Jade Green (สีเด่นจากรูปภาพ) */
+  --color-emerald-600: #34A866;  /* Primary Button Default (คมชัด ไม่ซีด) */
+  --color-emerald-700: #298A51;  /* Hover */
+  --color-emerald-800: #1E6D3E;  /* Active */
+  --color-emerald-900: #16522E;
+  --color-emerald-950: #003016;  /* Active Sidebar Container (#003016 from screenshot) */
+}
+
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --background: 40 40% 96%; /* #FAF6EE Warm Linen Cream */
+    --foreground: 222.2 47.4% 11.2%; /* #0F172A */
+    --card: 0 0% 100%; /* #FFFFFF Clean White Card */
+    --card-foreground: 222.2 47.4% 11.2%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 158 64% 42%; /* Emerald #10b981 */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --primary: 153 52% 48%; /* #3BB974 Mint Jade Green */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 38 33% 92%; /* #F2EBE1 */
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
+    --muted: 38 33% 92%;
+    --muted-foreground: 215.4 16.3% 46.9%; /* #64748B */
+    --accent: 38 33% 92%;
     --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 158 64% 42%;
+    --destructive: 346.8 77.2% 49.8%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 24% 86%; /* #E4DCD1 Greige Border */
+    --input: 36 24% 86%;
+    --ring: 153 52% 48%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 6.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 6.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 158 64% 45%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 158 64% 45%;
+    /* โหมดกลางคืนถอดแบบจากรูปภาพ reference: Deep Obsidian & Emerald Glow */
+    --background: 30 11% 5%; /* #0D0C0B Obsidian Deep Dark */
+    --foreground: 40 30% 98%; /* #FDFBF7 Crisp Warm White */
+    --card: 40 14% 7%; /* #16140F Dark Card & Sidebar Surface */
+    --card-foreground: 40 30% 98%;
+    --popover: 40 14% 7%;
+    --popover-foreground: 40 30% 98%;
+    --primary: 153 52% 48%; /* #3BB974 Mint Jade Green */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 15% 13%; /* #26231C Dark Inactive Container */
+    --secondary-foreground: 40 30% 98%;
+    --muted: 40 15% 13%;
+    --muted-foreground: 38 10% 58%; /* #9E9689 Soft Label Text */
+    --accent: 147 100% 9%; /* #003016 Dark Green Accent */
+    --accent-foreground: 153 52% 48%;
+    --destructive: 4 54% 17%; /* #431614 Deep Crimson Card */
+    --destructive-foreground: 0 85% 75%;
+    --border: 40 15% 13%; /* #26231C Subtle Dark Border */
+    --input: 40 15% 13%;
+    --ring: 153 52% 48%;
   }
 }
 
@@ -52,12 +85,22 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #FAF6EE;
+  color: #0F172A;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom smooth scrollbar */
+html.dark body {
+  background-color: #0D0C0B;
+  color: #FDFBF7;
+}
+
+/* Subtle, minimalist scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -65,10 +108,66 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4);
+  background: rgba(158, 150, 137, 0.25);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.7);
+  background: rgba(158, 150, 137, 0.45);
+}
+
+/* iOS & Mobile Touch Ergonomics */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Prevent iOS Safari from auto-zooming into inputs when focused */
+@media screen and (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* iOS Safe Area Utilities */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

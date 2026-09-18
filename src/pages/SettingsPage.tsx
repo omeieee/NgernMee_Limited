@@ -108,14 +108,15 @@ export const SettingsPage: React.FC = () => {
                   เงินเดือนประจำเริ่มต้น (บาท / เดือน)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-sm font-semibold text-slate-400">฿</span>
+                  <span className="absolute left-3.5 top-3 sm:top-2.5 text-sm font-semibold text-slate-400">฿</span>
                   <input
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     placeholder="45,000"
                     value={monthlySalary}
                     onChange={(e) => setMonthlySalary(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 tabular-nums"
+                    className="h-11 sm:h-10 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-base sm:text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 tabular-nums touch-manipulation"
                   />
                 </div>
               </div>
@@ -124,14 +125,16 @@ export const SettingsPage: React.FC = () => {
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                   เงินได้ทั้งปีโดยประมาณ (12 เดือน)
                 </label>
-                <div className="h-10 flex items-center px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                <div className="h-11 sm:h-10 flex items-center px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                   {formatCurrency((parseFloat(monthlySalary) || 0) * 12)}
                 </div>
               </div>
             </div>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit">บันทึกข้อมูลส่วนตัว</Button>
+              <Button type="submit" className="min-h-[44px] touch-manipulation w-full sm:w-auto">
+                บันทึกข้อมูลส่วนตัว
+              </Button>
             </div>
           </form>
         </CardContent>
@@ -184,8 +187,8 @@ export const SettingsPage: React.FC = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 ส่งออกรายการรายรับและรายจ่ายทั้งหมด {transactions.length} รายการ พร้อมยอดคนละครึ่ง
               </p>
-              <Button variant="outline" size="sm" onClick={handleExportTransactions} className="w-full">
-                <Download className="h-3.5 w-3.5 mr-1" />
+              <Button variant="outline" size="sm" onClick={handleExportTransactions} className="w-full min-h-[44px] touch-manipulation">
+                <Download className="h-4 w-4 mr-1.5" />
                 ดาวน์โหลด CSV รายการ
               </Button>
             </div>
@@ -197,8 +200,8 @@ export const SettingsPage: React.FC = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 ส่งออกสรุปค่าลดหย่อน เงินได้สุทธิ และการคำนวณขั้นบันไดภาษี ปี {taxConfig.tax_year}
               </p>
-              <Button variant="outline" size="sm" onClick={handleExportTax} className="w-full">
-                <Download className="h-3.5 w-3.5 mr-1" />
+              <Button variant="outline" size="sm" onClick={handleExportTax} className="w-full min-h-[44px] touch-manipulation">
+                <Download className="h-4 w-4 mr-1.5" />
                 ดาวน์โหลด CSV ภาษี
               </Button>
             </div>
@@ -236,7 +239,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             {isDemoMode && (
-              <span className="rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-[10px] px-2 py-0.5 font-medium">
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] px-2 py-0.5 font-medium border border-slate-200 dark:border-slate-700">
                 Demo
               </span>
             )}
@@ -259,7 +262,7 @@ export const SettingsPage: React.FC = () => {
                 setSavedSuccess(true);
                 setTimeout(() => setSavedSuccess(false), 2000);
               }}
-              className="gap-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50"
+              className="gap-1.5 text-xs text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:border-rose-200 dark:hover:border-rose-900"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>รีเซ็ตข้อมูล</span>

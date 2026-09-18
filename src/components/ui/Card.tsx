@@ -10,7 +10,7 @@ export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900 transition-all duration-200',
+        'rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors',
         className
       )}
       {...props}
@@ -26,7 +26,7 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => {
   return (
-    <div className={cn('flex flex-col space-y-1.5 pb-4', className)} {...props}>
+    <div className={cn('flex flex-col space-y-1 pb-4', className)} {...props}>
       {children}
     </div>
   );
@@ -39,7 +39,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
 }) => {
   return (
     <h3
-      className={cn('text-lg font-semibold leading-none tracking-tight text-slate-900 dark:text-slate-100', className)}
+      className={cn('text-base font-semibold leading-snug tracking-tight text-slate-900 dark:text-slate-100', className)}
       {...props}
     >
       {children}
@@ -53,7 +53,7 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   ...props
 }) => {
   return (
-    <p className={cn('text-sm text-slate-500 dark:text-slate-400', className)} {...props}>
+    <p className={cn('text-xs text-slate-500 dark:text-slate-400 leading-normal', className)} {...props}>
       {children}
     </p>
   );

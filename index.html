@@ -1,16 +1,222 @@
 <!doctype html>
-<html lang="th">
+<html lang="th" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23059669' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8'/><path d='M12 18V6'/></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NgernMee Limited — เงินมี จำกัด</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    
+    <!-- Primary Page Metadata -->
+    <title>เงินมี จำกัด (NgernMee Limited) — ระบบบันทึกรายรับ-รายจ่าย วางแผนภาษี ภ.ง.ด.91 และโควตา 60/40</title>
+    <meta name="title" content="เงินมี จำกัด (NgernMee Limited) — ระบบบันทึกรายรับ-รายจ่าย วางแผนภาษี ภ.ง.ด.91 และโควตา 60/40" />
+    <meta name="description" content="ระบบบันทึกรายรับ-รายจ่าย ดีไซน์มินิมอล คำนวณโควตาโครงการคนละครึ่ง/ไทยช่วยไทย 60/40 อัตโนมัติ พร้อมระบบวางแผนภาษีเงินได้บุคคลธรรมดา (ภ.ง.ด.91) อิงเกณฑ์สรรพากรจริง ใช้งานออฟไลน์ได้ทันที" />
+    <meta name="keywords" content="เงินมี, NgernMee, บันทึกรายรับรายจ่าย, วางแผนภาษี, ภงด91, คนละครึ่ง, ไทยช่วยไทย, 60/40, ลดหย่อนภาษี, Thai ESG, RMF, SSF, การเงินส่วนบุคคล, สมุดบัญชีรายรับรายจ่าย" />
+    <meta name="author" content="NgernMee Limited" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Theme & Color Scheme -->
+    <meta name="theme-color" content="#059669" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- Mobile Web App & iOS Standards -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="เงินมี จำกัด" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="เงินมี จำกัด (NgernMee Limited)" />
+    <meta property="og:title" content="เงินมี จำกัด (NgernMee Limited) — ระบบวางแผนการเงินและภาษีอย่างเรียบง่าย" />
+    <meta property="og:description" content="บันทึกรายรับ-รายจ่าย จัดการโควตา 60/40 และคำนวณภาษีเงินได้บุคคลธรรมดาแบบเรียลไทม์ ดีไซน์มินิมอลสบายตา" />
+    <meta property="og:locale" content="th_TH" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="เงินมี จำกัด (NgernMee Limited)" />
+    <meta name="twitter:description" content="ระบบบันทึกรายรับ-รายจ่าย วางแผนภาษี ภ.ง.ด.91 และคำนวณโควตา 60/40 สไตล์มินิมอล" />
+
+    <!-- Brand Favicon (Forest Emerald Currency Symbol) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23059669' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8'/><path d='M12 18V6'/></svg>" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23059669' stroke='none'><circle cx='12' cy='12' r='10'/><path fill='white' d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8v2h4a4 4 0 0 0 0-8h-4v2h6z'/></svg>" />
+
+    <!-- Typography: Inter (Numerals/English) + Prompt (Thai Script) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+
+    <!-- Schema.org JSON-LD Structured Data for Financial Product & Web App -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "เงินมี จำกัด (NgernMee Limited)",
+        "alternateName": "NgernMee Limited",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "All modern web browsers",
+        "inLanguage": "th",
+        "description": "ระบบบันทึกรายรับ-รายจ่าย วางแผนภาษีเงินได้บุคคลธรรมดา ภ.ง.ด.91 และคำนวณโควตาคนละครึ่ง/ไทยช่วยไทย 60/40",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "THB"
+        },
+        "featureList": [
+          "บันทึกรายรับ-รายจ่าย พร้อมชิปเลือกด่วน 1 วินาที (Quick Select)",
+          "คำนวณและตัดโควตาโครงการคนละครึ่ง/ไทยช่วยไทย 60/40 อัตโนมัติ",
+          "วางแผนภาษีเงินได้บุคคลธรรมดา (ภ.ง.ด.91) 8 ขั้นบันไดจริง พร้อมแนะนำค่าลดหย่อน",
+          "จัดกลุ่มหมวดหมู่แบบต้นไม้ลำดับขั้นไม่จำกัดชั้น (Hierarchical Category Tree)",
+          "รายงานวิเคราะห์กระแสเงินสด สัดส่วนค่าใช้จ่าย และส่งออก CSV รองรับภาษาไทย",
+          "รองรับทั้งโหมดทดลองใช้งานออฟไลน์ (Local Demo Mode) และเชื่อมต่อ Supabase Cloud"
+        ]
+      }
+    </script>
+
+    <!-- Pre-hydration Theme Detection Script (Prevents FOUC / Light Flash in Dark Mode) -->
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('ngernmee-storage');
+          if (stored) {
+            var parsed = JSON.parse(stored);
+            if (parsed && parsed.state && parsed.state.theme === 'dark') {
+              document.documentElement.classList.add('dark');
+            } else if (parsed && parsed.state && parsed.state.theme === 'light') {
+              document.documentElement.classList.remove('dark');
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            }
+          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- Inline Base Styles for Instant Initial Skeleton (Zero CLS before React bundle executes) -->
+    <style>
+      #root:empty {
+        display: flex;
+        min-height: 100vh;
+        background-color: #f8fafc;
+        font-family: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      .dark #root:empty {
+        background-color: #020617;
+      }
+      @keyframes ngernmee-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.45; }
+      }
+      .initial-skeleton-pulse {
+        animation: ngernmee-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+    </style>
   </head>
-  <body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 font-['Prompt',sans-serif] antialiased">
-    <div id="root"></div>
+
+  <body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 font-['Prompt',sans-serif] antialiased selection:bg-emerald-500/20 selection:text-emerald-700 dark:selection:text-emerald-300">
+    
+    <!-- Main Application Mount Root with Immediate Responsive App-Shell Skeleton -->
+    <div id="root">
+      <div class="flex w-full min-h-screen initial-skeleton-pulse" aria-busy="true" aria-label="กำลังโหลดระบบเงินมี จำกัด">
+        <!-- Desktop Sidebar Skeleton -->
+        <aside class="hidden md:flex w-64 flex-col border-r border-slate-200/80 dark:border-slate-800/90 bg-white dark:bg-slate-900 p-5 space-y-6">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-600/20 dark:bg-emerald-500/20 flex items-center justify-center">
+              <span class="text-emerald-600 font-bold">฿</span>
+            </div>
+            <div class="space-y-1">
+              <div class="h-4 w-28 bg-slate-200 dark:bg-slate-800 rounded"></div>
+              <div class="h-3 w-16 bg-slate-100 dark:bg-slate-850 rounded"></div>
+            </div>
+          </div>
+          <div class="space-y-2 pt-4">
+            <div class="h-9 w-full bg-slate-100 dark:bg-slate-800 rounded-lg"></div>
+            <div class="h-9 w-full bg-slate-100/60 dark:bg-slate-800/60 rounded-lg"></div>
+            <div class="h-9 w-full bg-slate-100/60 dark:bg-slate-800/60 rounded-lg"></div>
+            <div class="h-9 w-full bg-slate-100/60 dark:bg-slate-800/60 rounded-lg"></div>
+            <div class="h-9 w-full bg-slate-100/60 dark:bg-slate-800/60 rounded-lg"></div>
+          </div>
+        </aside>
+
+        <!-- Main Content Area Skeleton -->
+        <main class="flex-1 flex flex-col p-4 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+          <!-- Top Header Strip -->
+          <div class="flex items-center justify-between pb-4 border-b border-slate-200/60 dark:border-slate-800/60">
+            <div class="space-y-2">
+              <div class="h-6 w-36 bg-slate-200 dark:bg-slate-800 rounded-md"></div>
+              <div class="h-3.5 w-48 bg-slate-100 dark:bg-slate-850 rounded"></div>
+            </div>
+            <div class="h-10 w-32 bg-emerald-600/20 dark:bg-emerald-500/20 rounded-xl"></div>
+          </div>
+
+          <!-- Top Metric Cards Row (3 Cards) -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="h-28 rounded-2xl border border-slate-200/80 dark:border-slate-800/90 bg-white dark:bg-slate-900 p-5 space-y-3">
+              <div class="h-3 w-24 bg-slate-100 dark:bg-slate-800 rounded"></div>
+              <div class="h-7 w-32 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+            </div>
+            <div class="h-28 rounded-2xl border border-slate-200/80 dark:border-slate-800/90 bg-white dark:bg-slate-900 p-5 space-y-3">
+              <div class="h-3 w-24 bg-slate-100 dark:bg-slate-800 rounded"></div>
+              <div class="h-7 w-32 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+            </div>
+            <div class="h-28 rounded-2xl border border-slate-200/80 dark:border-slate-800/90 bg-white dark:bg-slate-900 p-5 space-y-3">
+              <div class="h-3 w-24 bg-slate-100 dark:bg-slate-800 rounded"></div>
+              <div class="h-7 w-32 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+            </div>
+          </div>
+
+          <!-- Quota Banner Skeleton -->
+          <div class="h-24 rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/40 dark:bg-blue-950/20 p-5 space-y-3">
+            <div class="flex justify-between">
+              <div class="h-3.5 w-44 bg-blue-200/60 dark:bg-blue-800/40 rounded"></div>
+              <div class="h-3.5 w-28 bg-blue-200/60 dark:bg-blue-800/40 rounded"></div>
+            </div>
+            <div class="h-2 w-full bg-blue-200/40 dark:bg-blue-800/30 rounded-full"></div>
+          </div>
+
+          <!-- Content Skeleton -->
+          <div class="h-64 rounded-2xl border border-slate-200/80 dark:border-slate-800/90 bg-white dark:bg-slate-900 p-6 space-y-4">
+            <div class="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded"></div>
+            <div class="space-y-3 pt-2">
+              <div class="h-10 w-full bg-slate-50 dark:bg-slate-850 rounded-xl"></div>
+              <div class="h-10 w-full bg-slate-50 dark:bg-slate-850 rounded-xl"></div>
+              <div class="h-10 w-full bg-slate-50 dark:bg-slate-850 rounded-xl"></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Semantic Fallback Outline for Search Engines & Non-JS Browsers -->
+    <noscript>
+      <div style="max-width: 800px; margin: 40px auto; padding: 24px; font-family: sans-serif; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; color: #0f172a; line-height: 1.6;">
+        <header style="margin-bottom: 24px; border-bottom: 2px solid #059669; padding-bottom: 16px;">
+          <h1 style="color: #059669; margin: 0 0 8px 0; font-size: 24px;">เงินมี จำกัด (NgernMee Limited)</h1>
+          <p style="color: #475569; margin: 0; font-size: 15px;">ระบบบันทึกรายรับ-รายจ่าย วางแผนภาษีเงินได้บุคคลธรรมดา (ภ.ง.ด.91) และคำนวณโควตาคนละครึ่ง/ไทยช่วยไทย 60/40</p>
+        </header>
+
+        <main>
+          <section style="margin-bottom: 20px;">
+            <h2 style="font-size: 18px; color: #0f172a; border-left: 4px solid #059669; padding-left: 8px;">โครงสร้างหลักของเว็บไซต์ (Website Structure)</h2>
+            <ul style="padding-left: 20px; color: #334155;">
+              <li><strong>แดชบอร์ดภาพรวม (/):</strong> สรุปยอดเงินคงเหลือ รายรับ-รายจ่ายประจำเดือน แถบโควตา 60/40 และกราฟแนวโน้ม 7 วัน</li>
+              <li><strong>รายการธุรกรรม & โควตา (/transactions):</strong> บันทึกรายการรวดเร็วด้วยชิปเลือกด่วน 1 วินาที พร้อมระบบตัดโควตารัฐช่วยจ่าย 40%</li>
+              <li><strong>วางแผนภาษี ภ.ง.ด.91 (/tax):</strong> คำนวณภาษีเงินได้บุคคลธรรมดา 8 ขั้นบันไดจริง พร้อมระบบตรวจสอบค่าลดหย่อน (Thai ESG, RMF, SSF, ประกัน)</li>
+              <li><strong>รายงานวิเคราะห์การเงิน (/reports):</strong> วิเคราะห์กระแสเงินสด สัดส่วนค่าใช้จ่าย อัตราการออม และส่งออกไฟล์ CSV รองรับ Excel ภาษาไทย</li>
+              <li><strong>จัดการหมวดหมู่ (/categories):</strong> จัดหมวดหมู่แบบต้นไม้ลำดับขั้นไม่จำกัดชั้น พร้อมปรับแต่งไอคอนและสี</li>
+              <li><strong>ตั้งค่าระบบ (/settings):</strong> สลับโหมดการทำงานระหว่าง Local Demo Mode (ออฟไลน์) และ Supabase Cloud</li>
+            </ul>
+          </section>
+
+          <section style="padding: 14px; background: #ecfdf5; border-radius: 8px; border: 1px solid #a7f3d0; color: #065f46; font-size: 14px;">
+            <strong>คำแนะนำ:</strong> กรุณาเปิดใช้งาน JavaScript ในเบราว์เซอร์ของคุณเพื่อใช้งานระบบเงินมี จำกัด แบบโต้ตอบเต็มรูปแบบ
+          </section>
+        </main>
+      </div>
+    </noscript>
+
+    <!-- React 19 Application Entrypoint -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

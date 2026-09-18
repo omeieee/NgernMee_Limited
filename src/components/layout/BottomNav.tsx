@@ -22,7 +22,7 @@ const MOBILE_NAV_ITEMS = [
 
 export const BottomNav: React.FC = () => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white/95 px-2 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[calc(4rem+env(safe-area-inset-bottom,0px))] pb-[max(0.4rem,env(safe-area-inset-bottom,0px))] items-center justify-around border-t border-slate-200/80 bg-white/95 px-2 backdrop-blur-xl dark:border-slate-800/90 dark:bg-slate-900/95 shadow-lg md:hidden">
       {MOBILE_NAV_ITEMS.map((item) => {
         const Icon = item.icon;
         return (
@@ -32,19 +32,24 @@ export const BottomNav: React.FC = () => {
             end={item.path === '/'}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-150',
+                'flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all relative min-h-[44px] min-w-[56px] active:scale-95 touch-manipulation select-none',
                 isActive
-                  ? 'text-emerald-600 dark:text-emerald-400 font-semibold scale-105'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                  ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                  : 'text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300'
               )
             }
           >
             {({ isActive }) => (
               <>
-                <Icon className={cn('h-5 w-5', isActive ? 'stroke-[2.5px]' : 'stroke-2')} />
-                <span className="text-[11px] mt-0.5 tracking-tight">{item.name}</span>
+                <div className={cn(
+                  'flex items-center justify-center rounded-lg p-1 transition-all',
+                  isActive && 'bg-emerald-50 dark:bg-emerald-950/70'
+                )}>
+                  <Icon className={cn('h-5 w-5', isActive ? 'stroke-[2.25px]' : 'stroke-[1.75px]')} />
+                </div>
+                <span className="text-[10px] mt-0.5 tracking-tight">{item.name}</span>
                 {isActive && (
-                  <span className="absolute bottom-1 h-1 w-1 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                  <span className="absolute bottom-1 h-1 w-1 rounded-full bg-emerald-600 dark:bg-emerald-400" />
                 )}
               </>
             )}
@@ -54,3 +59,4 @@ export const BottomNav: React.FC = () => {
     </nav>
   );
 };
+

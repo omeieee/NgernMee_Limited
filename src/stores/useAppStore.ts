@@ -48,7 +48,7 @@ export interface AppState {
   // Tax Configuration
   taxConfig: TaxConfig;
   updateTaxConfig: (updates: Partial<TaxConfig>) => Promise<void>;
-  getTaxCalculation: () => TaxCalculationResult;
+  getTaxCalculation: (overrideGrossIncome?: number) => TaxCalculationResult;
 
   // Thai Chuay Thai Quota helper
   getThaiChuayThaiStatus: (dateStr?: string, pendingAmount?: number) => ReturnType<typeof getRemainingQuota>;
@@ -56,6 +56,24 @@ export interface AppState {
   // Reset / Refresh
   resetToDemoData: () => void;
   syncWithSupabase: () => Promise<void>;
+}
+
+/**
+ * Helper to recursively collect all descendant category IDs
+ */
+function collectDescendantCategoryIds(categories: Category[], rootId: string): Set<string> {
+  const ids = new Set<string>([rootId]);
+  let added = true;
+  while (added) {
+    added = false;
+    for (const cat of categories) {
+      if (cat.parent_id && ids.has(cat.parent_id) && !ids.has(cat.id)) {
+        ids.add(cat.id);
+        added = true;
+      }
+    }
+  }
+  return ids;
 }
 
 export const useAppStore = create<AppState>()(
@@ -85,11 +103,21 @@ export const useAppStore = create<AppState>()(
       isLoading: false,
 
       setUser: (user, profile) => {
-        set({
-          user,
-          profile: profile || (user ? { id: user.id, display_name: user.email.split('@')[0], avatar_url: null, created_at: new Date().toISOString() } : null),
-          isDemoMode: false,
-        });
+        if (user) {
+          // Real login: clear all demo/stale data so Supabase sync starts from a clean slate.
+          // syncWithSupabase() will fill in the real profile, categories, transactions, and taxConfig.
+          set({
+            user,
+            profile: profile || null,
+            isDemoMode: false,
+            categories: [],
+            transactions: [],
+            taxConfig: createInitialTaxConfig(user.id),
+          });
+        } else {
+          // Sign-out: clear everything
+          set({ user: null, profile: null, isDemoMode: false });
+        }
       },
 
       setDemoMode: (enabled) => {
@@ -137,12 +165,17 @@ export const useAppStore = create<AppState>()(
         if (isSupabaseConfigured && !get().isDemoMode) {
           try {
             const { data, error } = await supabase.from('categories').insert(newCat).select().single();
-            if (!error && data) {
+            if (error) {
+              console.error('Supabase add category error:', error);
+              throw error;
+            }
+            if (data) {
               set((state) => ({ categories: [...state.categories, data] }));
               return data;
             }
           } catch (e) {
-            console.warn('Supabase sync error, falling back to local state:', e);
+            console.error('Supabase add category failed:', e);
+            throw e;
           }
         }
 
@@ -153,9 +186,14 @@ export const useAppStore = create<AppState>()(
       updateCategory: async (id, updates) => {
         if (isSupabaseConfigured && !get().isDemoMode) {
           try {
-            await supabase.from('categories').update(updates).eq('id', id);
+            const { error } = await supabase.from('categories').update(updates).eq('id', id);
+            if (error) {
+              console.error('Supabase update category error:', error);
+              throw error;
+            }
           } catch (e) {
-            console.warn('Supabase update category error:', e);
+            console.error('Supabase update category error:', e);
+            throw e;
           }
         }
         set((state) => ({
@@ -164,16 +202,24 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteCategory: async (id) => {
+        const idsToDelete = collectDescendantCategoryIds(get().categories, id);
+        const idsArray = Array.from(idsToDelete);
+
         if (isSupabaseConfigured && !get().isDemoMode) {
           try {
-            await supabase.from('categories').delete().eq('id', id);
+            const { error } = await supabase.from('categories').delete().in('id', idsArray);
+            if (error) {
+              console.error('Supabase delete category error:', error);
+              throw error;
+            }
           } catch (e) {
-            console.warn('Supabase delete category error:', e);
+            console.error('Supabase delete category error:', e);
+            throw e;
           }
         }
         set((state) => ({
-          // Delete node and its direct children
-          categories: state.categories.filter((c) => c.id !== id && c.parent_id !== id),
+          // Delete node and all its descendants
+          categories: state.categories.filter((c) => !idsToDelete.has(c.id)),
         }));
       },
 
@@ -210,12 +256,17 @@ export const useAppStore = create<AppState>()(
         if (isSupabaseConfigured && !get().isDemoMode) {
           try {
             const { data, error } = await supabase.from('transactions').insert(newTx).select().single();
-            if (!error && data) {
+            if (error) {
+              console.error('Supabase add transaction error:', error);
+              throw error;
+            }
+            if (data) {
               set((state) => ({ transactions: [data, ...state.transactions] }));
               return data;
             }
           } catch (e) {
-            console.warn('Supabase add transaction error:', e);
+            console.error('Supabase add transaction error:', e);
+            throw e;
           }
         }
 
@@ -224,16 +275,22 @@ export const useAppStore = create<AppState>()(
       },
 
       updateTransaction: async (id, updates) => {
+        const updatePayload = { ...updates, updated_at: new Date().toISOString() };
         if (isSupabaseConfigured && !get().isDemoMode) {
           try {
-            await supabase.from('transactions').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+            const { error } = await supabase.from('transactions').update(updatePayload).eq('id', id);
+            if (error) {
+              console.error('Supabase update transaction error:', error);
+              throw error;
+            }
           } catch (e) {
-            console.warn('Supabase update transaction error:', e);
+            console.error('Supabase update transaction error:', e);
+            throw e;
           }
         }
         set((state) => ({
           transactions: state.transactions.map((tx) =>
-            tx.id === id ? { ...tx, ...updates, updated_at: new Date().toISOString() } : tx
+            tx.id === id ? { ...tx, ...updatePayload } : tx
           ),
         }));
       },
@@ -241,9 +298,14 @@ export const useAppStore = create<AppState>()(
       deleteTransaction: async (id) => {
         if (isSupabaseConfigured && !get().isDemoMode) {
           try {
-            await supabase.from('transactions').delete().eq('id', id);
+            const { error } = await supabase.from('transactions').delete().eq('id', id);
+            if (error) {
+              console.error('Supabase delete transaction error:', error);
+              throw error;
+            }
           } catch (e) {
-            console.warn('Supabase delete transaction error:', e);
+            console.error('Supabase delete transaction error:', e);
+            throw e;
           }
         }
         set((state) => ({
@@ -258,22 +320,32 @@ export const useAppStore = create<AppState>()(
         const updatedConfig = { ...get().taxConfig, ...updates, updated_at: new Date().toISOString() };
         if (isSupabaseConfigured && !get().isDemoMode) {
           try {
-            await supabase.from('tax_configs').upsert(updatedConfig);
+            const { error } = await supabase.from('tax_configs').upsert(updatedConfig);
+            if (error) {
+              console.error('Supabase update tax config error:', error);
+              throw error;
+            }
           } catch (e) {
-            console.warn('Supabase update tax config error:', e);
+            console.error('Supabase update tax config error:', e);
+            throw e;
           }
         }
         set({ taxConfig: updatedConfig });
       },
 
-      getTaxCalculation: () => {
+      getTaxCalculation: (overrideGrossIncome?: number) => {
         const { taxConfig, transactions } = get();
-        // Calculate annual salary: prefer transaction salary sum if present, otherwise configured annual salary
-        const salaryTransactionsSum = transactions
-          .filter((tx) => tx.type === 'income' && tx.is_salary && tx.transaction_date.startsWith(String(taxConfig.tax_year)))
-          .reduce((sum, tx) => sum + tx.amount, 0);
+        let grossIncome: number;
+        if (typeof overrideGrossIncome === 'number') {
+          grossIncome = overrideGrossIncome;
+        } else {
+          // Calculate annual salary: prefer transaction salary sum if present, otherwise configured annual salary
+          const salaryTransactionsSum = transactions
+            .filter((tx) => tx.type === 'income' && tx.is_salary && tx.transaction_date.startsWith(String(taxConfig.tax_year)))
+            .reduce((sum, tx) => sum + tx.amount, 0);
 
-        const grossIncome = salaryTransactionsSum > 0 ? salaryTransactionsSum : taxConfig.annual_salary;
+          grossIncome = salaryTransactionsSum > 0 ? salaryTransactionsSum : taxConfig.annual_salary;
+        }
         return calculateTax(grossIncome, taxConfig.additional_deductions, taxConfig.tax_year);
       },
 
@@ -303,29 +375,48 @@ export const useAppStore = create<AppState>()(
         set({ isLoading: true });
         try {
           const userRes = await supabase.auth.getUser();
-          if (userRes.data?.user) {
-            const uid = userRes.data.user.id;
+          const authUser = userRes.data?.user;
+          if (authUser) {
+            const uid = authUser.id;
 
             // Fetch profile
-            const { data: profile } = await supabase.from('profiles').select('*').eq('id', uid).single();
+            const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', uid).single();
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.warn('Profile fetch note:', profileError.message);
+            }
+
             // Fetch categories
-            const { data: cats } = await supabase.from('categories').select('*').eq('user_id', uid).order('sort_order');
+            const { data: cats, error: catsError } = await supabase.from('categories').select('*').eq('user_id', uid).order('sort_order');
+            if (catsError) {
+              console.error('Error fetching categories from Supabase:', catsError);
+              throw catsError;
+            }
+
             // Fetch transactions
-            const { data: txs } = await supabase.from('transactions').select('*').eq('user_id', uid).order('transaction_date', { ascending: false });
+            const { data: txs, error: txsError } = await supabase.from('transactions').select('*').eq('user_id', uid).order('transaction_date', { ascending: false });
+            if (txsError) {
+              console.error('Error fetching transactions from Supabase:', txsError);
+              throw txsError;
+            }
+
             // Fetch tax config
             const currentYear = new Date().getFullYear();
-            const { data: tax } = await supabase.from('tax_configs').select('*').eq('user_id', uid).eq('tax_year', currentYear).single();
+            const { data: tax, error: taxError } = await supabase.from('tax_configs').select('*').eq('user_id', uid).eq('tax_year', currentYear).single();
+            if (taxError && taxError.code !== 'PGRST116') {
+              console.warn('Tax config fetch note:', taxError.message);
+            }
 
-            set({
-              user: { id: uid, email: userRes.data.user.email || '' },
-              profile: profile || null,
-              categories: cats || [],
-              transactions: txs || [],
-              taxConfig: tax || createInitialTaxConfig(uid),
-            });
+            set((state) => ({
+              user: { id: uid, email: authUser.email || '' },
+              profile: profile || state.profile,
+              categories: cats ?? state.categories,
+              transactions: txs ?? state.transactions,
+              taxConfig: tax ?? state.taxConfig,
+            }));
           }
         } catch (e) {
           console.error('Error syncing with Supabase:', e);
+          throw e;
         } finally {
           set({ isLoading: false });
         }

@@ -61,7 +61,7 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm transition-colors dark:border-slate-800 dark:bg-slate-900',
+          'flex h-11 sm:h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-base sm:text-sm transition-colors dark:border-slate-800 dark:bg-slate-900 min-h-[44px] touch-manipulation',
           error && 'border-rose-500',
           isOpen && 'ring-2 ring-emerald-500'
         )}
@@ -97,14 +97,14 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
           {/* Search Box */}
           <div className="p-2.5 border-b border-slate-100 dark:border-slate-800">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-2.5 top-3 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="ค้นหาหมวดหมู่..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
-                className="h-9 w-full rounded-xl bg-slate-50 pl-8 pr-3 text-xs text-slate-900 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="h-10 w-full rounded-xl bg-slate-50 pl-8 pr-3 text-base sm:text-xs text-slate-900 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 touch-manipulation"
               />
             </div>
           </div>

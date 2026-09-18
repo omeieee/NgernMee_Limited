@@ -3,7 +3,6 @@
 
 import React from 'react';
 import {
-  Sparkles,
   Edit2,
   Trash2,
   Briefcase,
@@ -50,20 +49,20 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
         {/* Search input */}
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3.5 top-3.5 sm:top-2.5 h-4 w-4 text-slate-400" />
           <input
             type="text"
             placeholder="ค้นหาชื่อรายการ หรือจำนวนเงิน..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="h-11 sm:h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-base sm:text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-600 shadow-2xs transition-all touch-manipulation"
           />
         </div>
 
         {/* Filters */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {/* Type Filter Buttons */}
-          <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+          <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-slate-800/80">
             {(['all', 'expense', 'income'] as const).map((t) => (
               <button
                 key={t}
@@ -72,7 +71,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   'rounded-lg px-2.5 py-1 text-xs font-medium transition-all',
                   typeFilter === t
                     ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white font-semibold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
                 )}
               >
                 {t === 'all' && 'ทั้งหมด'}
@@ -82,18 +81,22 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             ))}
           </div>
 
-          {/* Thai Chuay Thai Filter Toggle */}
+          {/* Subtle separator */}
+          <div className="hidden sm:block h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+
+          {/* Thai Chuay Thai Filter Toggle (Subtle optional filter) */}
           <button
             onClick={onOnlyThaiChuayThaiToggle}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all',
+              'inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs transition-all shadow-2xs',
               onlyThaiChuayThai
-                ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-950/60 dark:border-blue-700 dark:text-blue-300'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'
+                ? 'bg-slate-100 border-slate-300 text-slate-800 font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200'
+                : 'border-slate-200 bg-white text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
             )}
+            title="กรองเฉพาะรายการที่ใช้สิทธิ์คนละครึ่ง 60/40"
           >
-            <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-            <span>ไทยช่วยไทย 60/40</span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500">สิทธิเสริม:</span>
+            <span>ใช้สิทธิ์ 60/40</span>
           </button>
         </div>
       </div>
@@ -125,14 +128,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 <span className="text-slate-800 dark:text-slate-200 font-bold">
                   {formatThaiDate(dateStr, 'medium')}
                 </span>
-                <div className="flex items-center gap-3 tabular-nums">
+                <div className="flex items-center gap-3 tabular-nums font-semibold">
                   {dailyIncome > 0 && (
                     <span className="text-emerald-600 dark:text-emerald-400">
                       +{formatCurrency(dailyIncome)}
                     </span>
                   )}
                   {dailyExpense > 0 && (
-                    <span className="text-rose-600 dark:text-rose-400">
+                    <span className="text-slate-700 dark:text-slate-300">
                       -{formatCurrency(dailyExpense)}
                     </span>
                   )}
@@ -148,29 +151,28 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   return (
                     <div
                       key={tx.id}
-                      className="group flex items-center justify-between p-3.5 transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50"
+                      className="group flex items-center justify-between p-3.5 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/50"
                     >
                       {/* Left info: Icon, Description, Category, Badges */}
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-xs"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-2xs"
                           style={{
                             backgroundColor:
                               category?.color || (isExpense ? '#f43f5e' : '#10b981'),
                           }}
                         >
-                          <CategoryIcon name={category?.icon} className="h-5 w-5" />
+                          <CategoryIcon name={category?.icon} className="h-4.5 w-4.5" />
                         </div>
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                            <span className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
                               {tx.description}
                             </span>
                             {tx.is_thai_chuay_thai && (
-                              <Badge variant="thaiChuayThai" className="text-[10px]">
-                                <Sparkles className="h-2.5 w-2.5" />
-                                60/40
+                              <Badge variant="outline" className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                                สิทธิเสริม 60/40
                               </Badge>
                             )}
                             {tx.is_salary && (
@@ -181,11 +183,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                             )}
                           </div>
 
-                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                            {category ? category.name : 'อื่นๆ (ไม่ระบุหมวด)'}
+                          <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                            {category ? category.name : 'อื่นๆ'}
                             {tx.is_thai_chuay_thai && (
-                              <span className="text-blue-600 dark:text-blue-400 ml-2">
-                                (รัฐช่วยจ่าย ฿{tx.thai_chuay_thai_discount.toFixed(0)})
+                              <span className="text-slate-500 dark:text-slate-400 ml-1.5 text-[11px]">
+                                (ลด {formatCurrency(tx.thai_chuay_thai_discount)})
                               </span>
                             )}
                           </p>
@@ -197,9 +199,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                         <div className="text-right">
                           <div
                             className={cn(
-                              'font-bold text-sm tabular-nums flex items-center justify-end',
+                              'font-semibold text-xs sm:text-sm tabular-nums flex items-center justify-end',
                               isExpense
-                                ? 'text-rose-600 dark:text-rose-400'
+                                ? 'text-slate-900 dark:text-slate-100'
                                 : 'text-emerald-600 dark:text-emerald-400'
                             )}
                           >
@@ -215,21 +217,23 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                           )}
                         </div>
 
-                        {/* Edit & Delete Buttons (hover visible on desktop) */}
-                        <div className="flex items-center gap-1 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        {/* Edit & Delete Buttons: Always visible and comfortably tappable on touch/mobile */}
+                        <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => onEdit(tx)}
                             title="แก้ไข"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                            aria-label={`แก้ไขรายการ ${tx.description}`}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors touch-manipulation active:scale-90"
                           >
-                            <Edit2 className="h-3.5 w-3.5" />
+                            <Edit2 className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => onDelete(tx.id, tx.description)}
                             title="ลบ"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors"
+                            aria-label={`ลบรายการ ${tx.description}`}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 dark:hover:text-rose-400 transition-colors touch-manipulation active:scale-90"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </div>

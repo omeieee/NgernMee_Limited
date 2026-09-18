@@ -25,7 +25,7 @@ export const QuickSelectPanel: React.FC<QuickSelectPanelProps> = ({ items, onSel
         <span>รายการที่บันทึกบ่อย (คลิกเพื่อเลือกทันที):</span>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto touch-scroll no-scrollbar pb-1.5 sm:pb-0 gap-2 -mx-1 px-1">
         {items.map((item, idx) => {
           const category = item.category_id ? categoriesMap.get(item.category_id) : null;
           const isExpense = item.type === 'expense';
@@ -35,12 +35,7 @@ export const QuickSelectPanel: React.FC<QuickSelectPanelProps> = ({ items, onSel
               key={`${item.id}-${idx}`}
               type="button"
               onClick={() => onSelect(item)}
-              className={cn(
-                'group flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition-all cursor-pointer shadow-2xs hover:scale-102',
-                isExpense
-                  ? 'border-slate-200 bg-white hover:border-rose-300 hover:bg-rose-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-rose-900'
-                  : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-900'
-              )}
+              className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:bg-slate-800/60 px-3.5 py-2 text-xs transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0 min-h-[40px] touch-manipulation"
             >
               <div
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-white shadow-2xs"
@@ -49,21 +44,21 @@ export const QuickSelectPanel: React.FC<QuickSelectPanelProps> = ({ items, onSel
                 <CategoryIcon name={category?.icon} className="h-3 w-3" />
               </div>
 
-              <span className="font-medium text-slate-800 dark:text-slate-200 truncate max-w-[120px]">
+              <span className="font-medium text-slate-800 dark:text-slate-200 truncate max-w-[130px]">
                 {item.description}
               </span>
 
               <span
                 className={cn(
                   'font-semibold tabular-nums',
-                  isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                  isExpense ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-600 dark:text-emerald-400'
                 )}
               >
                 {formatCurrency(item.amount)}
               </span>
 
               {item.is_thai_chuay_thai && (
-                <span className="rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-[9px] px-1 py-0.2 font-medium">
+                <span className="rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-[9px] px-1.5 py-0.5 font-medium border border-blue-200/60 dark:border-blue-800/60">
                   60/40
                 </span>
               )}

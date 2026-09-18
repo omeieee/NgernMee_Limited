@@ -164,18 +164,19 @@ export const DeductionChecklist: React.FC<DeductionChecklistProps> = ({
                 </div>
 
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400">฿</span>
+                  <span className="absolute left-3 top-3 sm:top-2 text-xs font-semibold text-slate-400">฿</span>
                   <input
                     type="number"
                     min="0"
                     max={item.maxLimit}
+                    inputMode="numeric"
                     placeholder={item.placeholder}
                     value={currentValue > 0 ? currentValue : ''}
                     onChange={(e) => {
                       const val = parseFloat(e.target.value) || 0;
                       onUpdate(item.key, Math.min(val, item.maxLimit));
                     }}
-                    className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-7 pr-3 text-xs font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 tabular-nums"
+                    className="h-11 sm:h-9 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-7 pr-3 text-base sm:text-xs font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 tabular-nums touch-manipulation"
                   />
                 </div>
               </div>

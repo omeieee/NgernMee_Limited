@@ -6,7 +6,6 @@ import {
   Coins,
   ArrowDownCircle,
   ArrowUpCircle,
-  Sparkles,
   Info,
   Calendar,
   Briefcase,
@@ -110,7 +109,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Type Toggle: Expense / Income */}
-      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-800">
+      <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/80">
         <button
           type="button"
           onClick={() => {
@@ -118,13 +117,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             setIsSalary(false);
           }}
           className={cn(
-            'flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold transition-all',
+            'flex items-center justify-center gap-2 rounded-lg py-2.5 px-3 text-xs sm:text-sm font-semibold transition-all min-h-[44px] touch-manipulation active:scale-[0.98]',
             type === 'expense'
-              ? 'bg-rose-500 text-white shadow-sm shadow-rose-500/30'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
           )}
         >
-          <ArrowDownCircle className="h-4 w-4" />
+          <ArrowDownCircle className={cn('h-4 w-4', type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400')} />
           <span>รายจ่าย (Expense)</span>
         </button>
 
@@ -135,13 +134,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             setIsThaiChuayThai(false);
           }}
           className={cn(
-            'flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold transition-all',
+            'flex items-center justify-center gap-2 rounded-lg py-2.5 px-3 text-xs sm:text-sm font-semibold transition-all min-h-[44px] touch-manipulation active:scale-[0.98]',
             type === 'income'
-              ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
           )}
         >
-          <ArrowUpCircle className="h-4 w-4" />
+          <ArrowUpCircle className={cn('h-4 w-4', type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400')} />
           <span>รายรับ (Income)</span>
         </button>
       </div>
@@ -152,11 +151,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           จำนวนเงิน (บาท)
         </label>
         <div className="relative">
-          <span className="absolute left-3.5 top-2.5 text-sm font-semibold text-slate-400">฿</span>
+          <span className="absolute left-3.5 top-3 text-sm font-semibold text-slate-400">฿</span>
           <input
             type="number"
             step="0.01"
             min="0"
+            inputMode="decimal"
             placeholder="0.00"
             value={amount}
             onChange={(e) => {
@@ -164,8 +164,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               setErrors((prev) => ({ ...prev, amount: undefined }));
             }}
             className={cn(
-              'h-12 w-full rounded-2xl border border-slate-200 bg-white pl-8 pr-4 text-lg font-bold text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-colors',
-              errors.amount && 'border-rose-500'
+              'h-12 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-4 text-base sm:text-lg font-bold text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-600 shadow-2xs transition-all touch-manipulation',
+              errors.amount && 'border-rose-500 focus-visible:ring-rose-500/20'
             )}
             autoFocus={!initialData}
           />
@@ -176,7 +176,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       {/* Description */}
       <Input
         label="รายละเอียดรายการ"
-        placeholder="เช่น ค่าข้าวมันไก่, เงินเดือน, กาแฟสตาร์บัคส์"
+        placeholder="เช่น ค่าข้าวมันไก่, เงินเดือน, กาแฟ"
         value={description}
         error={errors.description}
         onChange={(e) => {
@@ -198,53 +198,55 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           วันที่ทำรายการ
         </label>
         <div className="relative">
-          <Calendar className="absolute left-3.5 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+          <Calendar className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
           <input
             type="date"
             value={transactionDate}
             onChange={(e) => setTransactionDate(e.target.value)}
-            className="flex h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 py-2 text-sm text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="flex h-11 sm:h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 py-2 text-base sm:text-sm text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-600 shadow-2xs touch-manipulation"
           />
         </div>
       </div>
 
-      {/* Expense-only: Thai Chuay Thai 60/40 Co-pay Toggle */}
+      {/* Expense-only: Optional Thai Chuay Thai 60/40 Co-pay */}
       {type === 'expense' && (
-        <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3.5 dark:border-blue-900/50 dark:bg-blue-950/20 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="thai-chuay-thai-toggle"
-              className="flex items-center gap-2 text-xs font-semibold text-blue-950 dark:text-blue-200 cursor-pointer"
-            >
-              <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <span>ใช้สิทธิ์โครงการคนละครึ่ง / ไทยช่วยไทย (60/40)</span>
-            </label>
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          <label
+            htmlFor="thai-chuay-thai-toggle"
+            className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none"
+          >
             <input
               type="checkbox"
               id="thai-chuay-thai-toggle"
               checked={isThaiChuayThai}
               onChange={(e) => setIsThaiChuayThai(e.target.checked)}
-              className="h-4 w-4 rounded-sm border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              className="h-4 w-4 rounded-sm border-slate-300 text-slate-900 dark:border-slate-700 dark:bg-slate-800 focus:ring-emerald-500 cursor-pointer"
             />
-          </div>
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              ใช้สิทธิ์คนละครึ่ง / ไทยช่วยไทย 60/40{' '}
+              <span className="text-slate-400 dark:text-slate-500 text-[11px] font-normal">
+                (ตัวเลือกเสริม)
+              </span>
+            </span>
+          </label>
 
           {isThaiChuayThai && (
-            <div className="pt-2 border-t border-blue-200/60 dark:border-blue-800/60 space-y-2 text-xs">
+            <div className="mt-2.5 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/60 space-y-2 text-xs">
               {/* Calculation Breakdown */}
-              <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/60">
+              <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200/70 dark:border-slate-800">
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 block text-[11px]">
-                    รัฐช่วยจ่าย (60%):
+                  <span className="text-slate-400 block text-[11px]">
+                    ส่วนลดรัฐช่วยจ่าย (60%):
                   </span>
-                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
                     {formatCurrency(thaiChuayThaiCalc.effectiveDiscount)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 block text-[11px]">
+                  <span className="text-slate-400 block text-[11px]">
                     คุณจ่ายสุทธิ (40%):
                   </span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
                     {formatCurrency(thaiChuayThaiCalc.netAmount)}
                   </span>
                 </div>
@@ -252,7 +254,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
               {/* Quota Cap Warning */}
               {thaiChuayThaiCalc.isCapped && (
-                <div className="flex items-start gap-1.5 text-amber-700 dark:text-amber-300 text-[11px] bg-amber-50 dark:bg-amber-950/40 p-2 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="flex items-start gap-1.5 text-amber-700 dark:text-amber-300 text-[11px] bg-amber-50 dark:bg-amber-950/40 p-2 rounded-lg border border-amber-200/70 dark:border-amber-800/70">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                   <span>
                     {thaiChuayThaiCalc.capReason === 'daily' && 'ยอดส่วนลดถูกจำกัดด้วยเพดานรายวัน (สูงสุด 200 บาท/วัน)'}
@@ -263,9 +265,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               )}
 
               {/* Quota Status */}
-              <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
-                <span>โควตารายวันคงเหลือ: {formatCurrency(quota.dailyRemaining)}</span>
-                <span>โควตารายเดือนคงเหลือ: {formatCurrency(quota.monthlyRemaining)}</span>
+              <div className="flex justify-between text-[11px] text-slate-400 px-1">
+                <span>โควตาวันนี้คงเหลือ: {formatCurrency(quota.dailyRemaining)}</span>
+                <span>โควตาเดือนนี้คงเหลือ: {formatCurrency(quota.monthlyRemaining)}</span>
               </div>
             </div>
           )}
@@ -274,11 +276,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       {/* Income-only: Salary Taxable Flag */}
       {type === 'income' && (
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+        <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 dark:border-slate-800 dark:bg-slate-900/60">
           <div className="flex items-center justify-between">
             <label
               htmlFor="salary-toggle"
-              className="flex items-center gap-2 text-xs font-semibold text-emerald-950 dark:text-emerald-200 cursor-pointer"
+              className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer"
             >
               <Briefcase className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <span>เป็นเงินเดือนประจำ (ดึงไปคำนวณภาษีอัตโนมัติ)</span>
@@ -295,16 +297,23 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-2 pt-2">
+      <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="min-h-[44px] px-4 touch-manipulation"
+          >
             ยกเลิก
           </Button>
         )}
         <Button
           type="submit"
-          className={type === 'expense' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'}
+          variant={type === 'expense' ? 'danger' : 'default'}
           isLoading={isSubmitting}
+          className="min-h-[44px] px-5 touch-manipulation font-semibold flex-1 sm:flex-initial"
         >
           {initialData?.id ? 'บันทึกการแก้ไข' : type === 'expense' ? 'บันทึกรายจ่าย' : 'บันทึกรายรับ'}
         </Button>
