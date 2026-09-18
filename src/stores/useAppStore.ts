@@ -29,6 +29,7 @@ export interface AppState {
   isLoading: boolean;
   setUser: (user: { id: string; email: string } | null, profile?: Profile | null) => void;
   setDemoMode: (enabled: boolean) => void;
+  updateProfile: (displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
 
   // Categories
@@ -136,6 +137,36 @@ export const useAppStore = create<AppState>()(
         } else {
           set({ isDemoMode: false });
         }
+      },
+
+      updateProfile: async (displayName: string) => {
+        const currentUserId = get().user?.id;
+        if (isSupabaseConfigured && !get().isDemoMode && currentUserId) {
+          try {
+            const { error } = await supabase
+              .from('profiles')
+              .update({ display_name: displayName, updated_at: new Date().toISOString() })
+              .eq('id', currentUserId);
+            if (error) {
+              console.error('Supabase update profile error:', error);
+              throw error;
+            }
+          } catch (e) {
+            console.error('Supabase update profile failed:', e);
+            throw e;
+          }
+        }
+        set((state) => ({
+          profile: state.profile
+            ? { ...state.profile, display_name: displayName, updated_at: new Date().toISOString() }
+            : {
+                id: currentUserId || DEMO_USER_ID,
+                display_name: displayName,
+                avatar_url: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+        }));
       },
 
       signOut: async () => {
@@ -386,10 +417,24 @@ export const useAppStore = create<AppState>()(
             }
 
             // Fetch categories
-            const { data: cats, error: catsError } = await supabase.from('categories').select('*').eq('user_id', uid).order('sort_order');
+            let { data: cats, error: catsError } = await supabase.from('categories').select('*').eq('user_id', uid).order('sort_order');
             if (catsError) {
               console.error('Error fetching categories from Supabase:', catsError);
               throw catsError;
+            }
+
+            // Auto-seed default categories if user has none
+            if (!cats || cats.length === 0) {
+              try {
+                await supabase.rpc('initialize_my_categories');
+                // Re-fetch after seeding
+                const { data: seededCats, error: seededError } = await supabase.from('categories').select('*').eq('user_id', uid).order('sort_order');
+                if (!seededError && seededCats) {
+                  cats = seededCats;
+                }
+              } catch (seedErr) {
+                console.warn('Auto-seed categories failed (trigger may handle it):', seedErr);
+              }
             }
 
             // Fetch transactions

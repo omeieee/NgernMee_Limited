@@ -33,6 +33,7 @@ export const SettingsPage: React.FC = () => {
     isDemoMode,
     taxConfig,
     updateTaxConfig,
+    updateProfile,
     transactions,
     getTaxCalculation,
     resetToDemoData,
@@ -47,6 +48,7 @@ export const SettingsPage: React.FC = () => {
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     const salaryNum = parseFloat(monthlySalary) || 0;
+    await updateProfile(displayName);
     await updateTaxConfig({
       monthly_salary: salaryNum,
       annual_salary: salaryNum * 12,
