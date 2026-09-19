@@ -72,7 +72,7 @@
       }
     </script>
 
-    <!-- Pre-hydration Theme Detection Script (Prevents FOUC / Light Flash in Dark Mode) -->
+    <!-- Pre-hydration Theme & Device Detection Script (Prevents FOUC / Light Flash in Dark Mode & Handles Touch Devices) -->
     <script>
       (function() {
         try {
@@ -88,6 +88,14 @@
             }
           } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+
+        // Touch device detection (iPad, tablets, mobile) to ensure hover-hidden actions remain accessible
+        try {
+          var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches);
+          if (isTouch) {
+            document.documentElement.classList.add('touch-device');
           }
         } catch (e) {}
       })();

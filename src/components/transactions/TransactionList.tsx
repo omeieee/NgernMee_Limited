@@ -151,7 +151,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   return (
                     <div
                       key={tx.id}
-                      className="group flex items-center justify-between p-3.5 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/50"
+                      onClick={() => onEdit(tx)}
+                      className="group flex items-center justify-between p-3.5 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/50 cursor-pointer active:bg-slate-100/70 dark:active:bg-slate-800/80"
                     >
                       {/* Left info: Icon, Description, Category, Badges */}
                       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -217,10 +218,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                           )}
                         </div>
 
-                        {/* Edit & Delete Buttons: Always visible and comfortably tappable on touch/mobile */}
-                        <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        {/* Edit & Delete Buttons: Always visible on iPad/touch devices, revealed on hover on desktop with mouse */}
+                        <div className="flex items-center gap-1 group-hover-actions">
                           <button
-                            onClick={() => onEdit(tx)}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit(tx);
+                            }}
                             title="แก้ไข"
                             aria-label={`แก้ไขรายการ ${tx.description}`}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors touch-manipulation active:scale-90"
@@ -228,7 +233,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => onDelete(tx.id, tx.description)}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(tx.id, tx.description);
+                            }}
                             title="ลบ"
                             aria-label={`ลบรายการ ${tx.description}`}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 dark:hover:text-rose-400 transition-colors touch-manipulation active:scale-90"

@@ -171,3 +171,31 @@ button, a, input, select, textarea, [role="button"] {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Action buttons visibility:
+   - On touch devices (iPad, iPhone, Android tablets/phones):
+     Keep buttons always visible (opacity: 1) and easily tappable.
+   - On devices with fine mouse pointer & true hover (PC / Mac with mouse/trackpad):
+     Hide buttons by default (opacity: 0) and reveal smoothly when hovering or focusing the item.
+*/
+.group-hover-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.15s ease-in-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html:not(.touch-device) .group-hover-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+  html:not(.touch-device) .group:hover .group-hover-actions,
+  html:not(.touch-device) .group:focus-within .group-hover-actions,
+  html:not(.touch-device) .group:active .group-hover-actions,
+  html:not(.touch-device) .group-hover-actions:hover,
+  html:not(.touch-device) .group-hover-actions:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+

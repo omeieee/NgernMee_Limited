@@ -83,10 +83,14 @@ const CategoryTreeNode: React.FC<CategoryNodeProps> = ({
           )}
         </div>
 
-        {/* Action buttons (always accessible on touch devices, hover on desktop) */}
-        <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+        {/* Action buttons (always accessible on touch devices/iPad, hover on desktop with mouse) */}
+        <div className="flex items-center gap-0.5 group-hover-actions shrink-0">
           <button
-            onClick={() => onAddSub(category.id, category)}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddSub(category.id, category);
+            }}
             title="เพิ่มหมวดย่อย"
             aria-label={`เพิ่มหมวดย่อยใน ${category.name}`}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors touch-manipulation active:scale-90"
@@ -94,7 +98,11 @@ const CategoryTreeNode: React.FC<CategoryNodeProps> = ({
             <Plus className="h-4 w-4" />
           </button>
           <button
-            onClick={() => onEdit(category)}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(category);
+            }}
             title="แก้ไขหมวดหมู่"
             aria-label={`แก้ไข ${category.name}`}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors touch-manipulation active:scale-90"
@@ -102,7 +110,11 @@ const CategoryTreeNode: React.FC<CategoryNodeProps> = ({
             <Edit2 className="h-4 w-4" />
           </button>
           <button
-            onClick={() => onDelete(category.id, category.name, childCount)}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(category.id, category.name, childCount);
+            }}
             title="ลบหมวดหมู่"
             aria-label={`ลบ ${category.name}`}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors touch-manipulation active:scale-90"
