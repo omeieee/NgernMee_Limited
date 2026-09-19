@@ -1,7 +1,7 @@
 // src/pages/LoginPage.tsx
 // Authentication page with sign in, register, and instant demo access
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coins, LogIn, UserPlus, Sparkles, CheckCircle, Shield } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
@@ -17,8 +17,14 @@ export const LoginPage: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  const { signIn, signUp, signInWithDemo, loading, authError } = useAuth();
+  const { isAuthenticated, signIn, signUp, signInWithDemo, loading, authError } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const validate = () => {
     const errs: { email?: string; password?: string } = {};

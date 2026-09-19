@@ -99,9 +99,9 @@ export const useAppStore = create<AppState>()(
       },
 
       // Auth & Profile State
-      user: { id: DEMO_USER_ID, email: 'demo@ngernmee.local' },
-      profile: DEMO_PROFILE,
-      isDemoMode: true,
+      user: isSupabaseConfigured ? null : { id: DEMO_USER_ID, email: 'demo@ngernmee.local' },
+      profile: isSupabaseConfigured ? null : DEMO_PROFILE,
+      isDemoMode: !isSupabaseConfigured,
       isLoading: false,
 
       setUser: (user, profile) => {
@@ -110,29 +110,34 @@ export const useAppStore = create<AppState>()(
           const isSameUser = currentUser?.id === user.id;
 
           if (isSameUser) {
-            // Same user re-authenticating (e.g. page reload) — keep existing data
-            set({
+            // Same user re-authenticating (e.g. session refreshed) — preserve state but update identity
+            set((state) => ({
               user,
-              profile: profile || get().profile,
+              profile: profile !== undefined ? profile : state.profile,
               isDemoMode: false,
-              categories: get().categories.length > 0 ? get().categories : createInitialCategories(user.id),
-            });
+            }));
           } else {
-            // User login — always provide full default categories upfront so user never sees 0
+            // New user login — reset with clear state until syncWithSupabase populates database records
             set({
               user,
-              profile: profile || null,
+              profile: profile ?? null,
               isDemoMode: false,
-              categories: get().categories.length > 0 && currentUser?.id === DEMO_USER_ID
-                ? createInitialCategories(user.id)
-                : (get().categories.length > 0 ? get().categories : createInitialCategories(user.id)),
+              categories: createInitialCategories(user.id),
               transactions: [],
               taxConfig: createInitialTaxConfig(user.id),
             });
           }
         } else {
-          // Sign-out: clear everything
-          set({ user: null, profile: null, isDemoMode: false });
+          // Sign-out: reset to clean unauthenticated state
+          const demoCats = createInitialCategories(DEMO_USER_ID);
+          set({
+            user: null,
+            profile: null,
+            isDemoMode: false,
+            categories: demoCats,
+            transactions: [],
+            taxConfig: createInitialTaxConfig(DEMO_USER_ID),
+          });
         }
       },
 
@@ -150,7 +155,15 @@ export const useAppStore = create<AppState>()(
             taxConfig: initialTax,
           });
         } else {
-          set({ isDemoMode: false });
+          const demoCats = createInitialCategories(DEMO_USER_ID);
+          set({
+            isDemoMode: false,
+            user: null,
+            profile: null,
+            categories: demoCats,
+            transactions: [],
+            taxConfig: createInitialTaxConfig(DEMO_USER_ID),
+          });
         }
       },
 
@@ -158,14 +171,24 @@ export const useAppStore = create<AppState>()(
         const currentUserId = get().user?.id;
         if (isSupabaseConfigured && !get().isDemoMode && currentUserId) {
           try {
+            // Use upsert to guarantee the profile row is created even if signup trigger didn't fire
             const { error } = await supabase
               .from('profiles')
-              .update({ display_name: displayName, updated_at: new Date().toISOString() })
-              .eq('id', currentUserId);
+              .upsert({
+                id: currentUserId,
+                display_name: displayName,
+                updated_at: new Date().toISOString(),
+              }, { onConflict: 'id' });
+
             if (error) {
               console.error('Supabase update profile error:', error);
               throw error;
             }
+
+            // Also update Supabase auth metadata so session and auth user stay synchronized
+            await supabase.auth.updateUser({
+              data: { display_name: displayName },
+            });
           } catch (e) {
             console.error('Supabase update profile failed:', e);
             throw e;
@@ -188,10 +211,14 @@ export const useAppStore = create<AppState>()(
         if (isSupabaseConfigured) {
           await supabase.auth.signOut();
         }
+        const demoCats = createInitialCategories(DEMO_USER_ID);
         set({
           user: null,
           profile: null,
           isDemoMode: false,
+          categories: demoCats,
+          transactions: [],
+          taxConfig: createInitialTaxConfig(DEMO_USER_ID),
         });
       },
 
@@ -396,7 +423,9 @@ export const useAppStore = create<AppState>()(
         const updatedConfig = { ...get().taxConfig, ...updates, updated_at: new Date().toISOString() };
         if (isSupabaseConfigured && !get().isDemoMode) {
           try {
-            const { error } = await supabase.from('tax_configs').upsert(updatedConfig);
+            const { error } = await supabase
+              .from('tax_configs')
+              .upsert(updatedConfig, { onConflict: 'user_id,tax_year' });
             if (error) {
               console.error('Supabase update tax config error:', error);
               throw error;
@@ -466,14 +495,34 @@ export const useAppStore = create<AppState>()(
             user: { id: uid, email: authUser.email || '' },
           });
 
-          // Fetch profile
-          const { data: profile, error: profileError } = await supabase
+          // Fetch profile using maybeSingle to avoid 406/PGRST116 errors if missing
+          let { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', uid)
-            .single();
-          if (profileError && profileError.code !== 'PGRST116') {
+            .maybeSingle();
+
+          if (profileError) {
             console.warn('Profile fetch note:', profileError.message);
+          }
+
+          // If profile row doesn't exist in Supabase yet, create it from auth metadata
+          if (!profile) {
+            const defaultName = authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'ผู้ใช้งาน';
+            const newProfile: Profile = {
+              id: uid,
+              display_name: defaultName,
+              avatar_url: authUser.user_metadata?.avatar_url || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+            try {
+              await supabase.from('profiles').upsert(newProfile, { onConflict: 'id' });
+              profile = newProfile;
+            } catch (e) {
+              console.warn('Initial profile upsert note:', e);
+              profile = newProfile;
+            }
           }
 
           // Fetch categories
@@ -516,28 +565,41 @@ export const useAppStore = create<AppState>()(
 
           // Fetch tax config
           const currentYear = new Date().getFullYear();
-          const { data: tax, error: taxError } = await supabase
+          let { data: tax, error: taxError } = await supabase
             .from('tax_configs')
             .select('*')
             .eq('user_id', uid)
             .eq('tax_year', currentYear)
-            .single();
-          if (taxError && taxError.code !== 'PGRST116') {
+            .maybeSingle();
+
+          if (taxError) {
             console.warn('Tax config fetch note:', taxError.message);
+          }
+
+          if (!tax) {
+            const initialTax = createInitialTaxConfig(uid);
+            try {
+              await supabase.from('tax_configs').upsert(initialTax, { onConflict: 'user_id,tax_year' });
+              tax = initialTax;
+            } catch (e) {
+              console.warn('Initial tax config seed note:', e);
+              tax = initialTax;
+            }
           }
 
           const resolvedCats = (cats && cats.length > 0)
             ? cats
-            : (get().categories.length > 0 ? get().categories : createInitialCategories(uid));
+            : createInitialCategories(uid);
 
-          set((state) => ({
+          // Authoritatively overwrite state from cloud database — never preserve stale data
+          set({
             user: { id: uid, email: authUser.email || '' },
-            profile: profile || state.profile,
+            profile: profile || null,
             isDemoMode: false,
             categories: resolvedCats,
-            transactions: txs ?? state.transactions,
-            taxConfig: tax ?? state.taxConfig,
-          }));
+            transactions: txs || [],
+            taxConfig: tax || createInitialTaxConfig(uid),
+          });
         } catch (e) {
           console.error('Error syncing with Supabase:', e);
         } finally {
@@ -549,12 +611,6 @@ export const useAppStore = create<AppState>()(
       name: 'ngernmee-storage',
       partialize: (state) => ({
         theme: state.theme,
-        user: state.user,
-        profile: state.profile,
-        isDemoMode: state.isDemoMode,
-        categories: state.categories,
-        transactions: state.transactions,
-        taxConfig: state.taxConfig,
       }),
     }
   )

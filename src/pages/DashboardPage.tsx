@@ -36,7 +36,7 @@ import {
 import type { Transaction } from '../lib/types';
 
 export const DashboardPage: React.FC = () => {
-  const { profile, transactions, addTransaction } = useAppStore();
+  const { profile, user, isDemoMode, transactions, addTransaction } = useAppStore();
   const { categoriesMap } = useCategories();
   const { quota } = useThaiChuayThai();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -117,7 +117,7 @@ export const DashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            สวัสดี, {profile?.display_name || 'คุณสมชาย'} 👋
+            สวัสดี, {profile?.display_name || (isDemoMode ? 'คุณสมชาย' : (user?.email?.split('@')[0] || 'ผู้ใช้งาน'))} 👋
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5" />

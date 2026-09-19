@@ -1,7 +1,7 @@
 // src/pages/SettingsPage.tsx
 // Settings page for profile management, salary defaults, data export, and theme
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   User,
@@ -14,6 +14,7 @@ import {
   Briefcase,
   Sparkles,
   CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -44,17 +45,41 @@ export const SettingsPage: React.FC = () => {
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [monthlySalary, setMonthlySalary] = useState(taxConfig.monthly_salary ? String(taxConfig.monthly_salary) : '');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Synchronize input fields when profile or taxConfig updates from cloud sync
+  useEffect(() => {
+    if (profile?.display_name !== undefined && profile?.display_name !== null) {
+      setDisplayName(profile.display_name);
+    }
+  }, [profile?.display_name]);
+
+  useEffect(() => {
+    if (taxConfig.monthly_salary !== undefined) {
+      setMonthlySalary(taxConfig.monthly_salary ? String(taxConfig.monthly_salary) : '');
+    }
+  }, [taxConfig.monthly_salary]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    const salaryNum = parseFloat(monthlySalary) || 0;
-    await updateProfile(displayName);
-    await updateTaxConfig({
-      monthly_salary: salaryNum,
-      annual_salary: salaryNum * 12,
-    });
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const salaryNum = parseFloat(monthlySalary) || 0;
+      await updateProfile(displayName);
+      await updateTaxConfig({
+        monthly_salary: salaryNum,
+        annual_salary: salaryNum * 12,
+      });
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+      setSaveError(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleExportTransactions = () => {
@@ -72,6 +97,13 @@ export const SettingsPage: React.FC = () => {
         <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 p-4 text-xs font-semibold text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 animate-in fade-in duration-200">
           <CheckCircle className="h-4 w-4 text-emerald-600" />
           <span>บันทึกการตั้งค่าเรียบร้อยแล้ว</span>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="flex items-center gap-2 rounded-2xl bg-rose-50 dark:bg-rose-950/60 p-4 text-xs font-semibold text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800 animate-in fade-in duration-200">
+          <AlertCircle className="h-4 w-4 text-rose-600" />
+          <span>{saveError}</span>
         </div>
       )}
 
@@ -134,7 +166,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit" className="min-h-[44px] touch-manipulation w-full sm:w-auto">
+              <Button type="submit" isLoading={isSaving} className="min-h-[44px] touch-manipulation w-full sm:w-auto">
                 บันทึกข้อมูลส่วนตัว
               </Button>
             </div>

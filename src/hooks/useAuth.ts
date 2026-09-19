@@ -19,34 +19,63 @@ function getOfflineUserId(email: string): string {
 
 export function useAuth() {
   const { user, profile, isDemoMode, setUser, setDemoMode, signOut: storeSignOut, syncWithSupabase } = useAppStore();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
 
-    // Check existing session on mount and sync real data from Supabase.
-    // Always check regardless of isDemoMode — a valid Supabase session takes priority.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({ id: session.user.id, email: session.user.email || '' });
-        syncWithSupabase().catch(console.error);
+    let isMounted = true;
+
+    async function initAuth() {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Session retrieval error:', error);
+        }
+        if (!isMounted) return;
+
+        if (session?.user) {
+          useAppStore.getState().setUser({ id: session.user.id, email: session.user.email || '' });
+          await useAppStore.getState().syncWithSupabase();
+        }
+      } catch (err) {
+        console.error('Initial session check failed:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-    });
+    }
+
+    initAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({ id: session.user.id, email: session.user.email || '' });
-        syncWithSupabase().catch(console.error);
-      } else if (!session && !isDemoMode) {
-        setUser(null, null);
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+
+      if (event === 'SIGNED_OUT') {
+        useAppStore.getState().setUser(null, null);
+      } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (session?.user) {
+          const currentUserId = useAppStore.getState().user?.id;
+          useAppStore.getState().setUser({ id: session.user.id, email: session.user.email || '' });
+          if (currentUserId !== session.user.id) {
+            await useAppStore.getState().syncWithSupabase().catch(console.error);
+          }
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [isDemoMode, setUser, syncWithSupabase]);
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
@@ -69,7 +98,7 @@ export function useAuth() {
       }
       if (data.user) {
         setUser({ id: data.user.id, email: data.user.email || email });
-        // Fetch the real profile name, categories and transactions from Supabase
+        // Fetch authoritative profile name, categories and transactions from Supabase
         await syncWithSupabase();
       }
       setLoading(false);
@@ -118,8 +147,20 @@ export function useAuth() {
 
       if (data.user) {
         setUser({ id: data.user.id, email: data.user.email || email });
-        // The DB trigger seeds the profile + categories; fetch them now so the
-        // dashboard shows the correct name (from signUp metadata) on first load.
+
+        // Guarantee profile row is created immediately with the provided display name
+        if (displayName) {
+          try {
+            await supabase.from('profiles').upsert({
+              id: data.user.id,
+              display_name: displayName,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'id' });
+          } catch (e) {
+            console.warn('Initial profile upsert note on signup:', e);
+          }
+        }
+
         await syncWithSupabase();
       }
       setLoading(false);
