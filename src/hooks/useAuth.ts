@@ -25,9 +25,10 @@ export function useAuth() {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
-    // Check existing session on mount and sync real data from Supabase
+    // Check existing session on mount and sync real data from Supabase.
+    // Always check regardless of isDemoMode — a valid Supabase session takes priority.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user && !isDemoMode) {
+      if (session?.user) {
         setUser({ id: session.user.id, email: session.user.email || '' });
         syncWithSupabase().catch(console.error);
       }
@@ -36,7 +37,7 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user && !isDemoMode) {
+      if (session?.user) {
         setUser({ id: session.user.id, email: session.user.email || '' });
         syncWithSupabase().catch(console.error);
       } else if (!session && !isDemoMode) {

@@ -39,12 +39,26 @@ export function createInitialCategories(userId: string = DEMO_USER_ID): Category
     if (exp.subcategories) {
       let subOrder = 1;
       for (const subName of exp.subcategories) {
+        let icon = exp.icon;
+        if (subName === 'ของว่าง / เครื่องดื่ม') icon = 'coffee';
+        else if (subName === 'มื้อพิเศษ / บุฟเฟต์') icon = 'party-popper';
+        else if (subName === 'ค่าน้ำมันรถ') icon = 'fuel';
+        else if (subName === 'รถไฟฟ้า / ขนส่งสาธารณะ') icon = 'train';
+        else if (subName === 'ที่จอดรถ / ค่าทางด่วน') icon = 'navigation';
+        else if (subName === 'ค่าส่วนกลาง / ซ่อมบำรุง') icon = 'wrench';
+        else if (subName === 'ค่ายา / พบแพทย์') icon = 'stethoscope';
+        else if (subName === 'เบี้ยประกันสุขภาพ') icon = 'shield-check';
+        else if (subName === 'ค่าไฟฟ้า') icon = 'zap';
+        else if (subName === 'ค่าน้ำประปา') icon = 'droplets';
+        else if (subName === 'ค่าอินเทอร์เน็ต / โทรศัพท์') icon = 'wifi';
+        else if (subName === 'กองทุน / หุ้น') icon = 'trending-up';
+
         categories.push({
           id: generateId(),
           user_id: userId,
           parent_id: parentId,
           name: subName,
-          icon: exp.icon,
+          icon,
           color: exp.color,
           type: 'expense',
           sort_order: subOrder++,

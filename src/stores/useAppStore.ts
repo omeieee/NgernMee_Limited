@@ -38,6 +38,7 @@ export interface AppState {
   addCategory: (category: Omit<Category, 'id' | 'created_at' | 'user_id'>) => Promise<Category>;
   updateCategory: (id: string, updates: Partial<Category>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  initializeDefaultCategories: (force?: boolean) => Promise<void>;
 
   // Transactions
   transactions: Transaction[];
@@ -105,16 +106,30 @@ export const useAppStore = create<AppState>()(
 
       setUser: (user, profile) => {
         if (user) {
-          // Real login: clear all demo/stale data so Supabase sync starts from a clean slate.
-          // syncWithSupabase() will fill in the real profile, categories, transactions, and taxConfig.
-          set({
-            user,
-            profile: profile || null,
-            isDemoMode: false,
-            categories: [],
-            transactions: [],
-            taxConfig: createInitialTaxConfig(user.id),
-          });
+          const currentUser = get().user;
+          const isSameUser = currentUser?.id === user.id;
+
+          if (isSameUser) {
+            // Same user re-authenticating (e.g. page reload) — keep existing data
+            set({
+              user,
+              profile: profile || get().profile,
+              isDemoMode: false,
+              categories: get().categories.length > 0 ? get().categories : createInitialCategories(user.id),
+            });
+          } else {
+            // User login — always provide full default categories upfront so user never sees 0
+            set({
+              user,
+              profile: profile || null,
+              isDemoMode: false,
+              categories: get().categories.length > 0 && currentUser?.id === DEMO_USER_ID
+                ? createInitialCategories(user.id)
+                : (get().categories.length > 0 ? get().categories : createInitialCategories(user.id)),
+              transactions: [],
+              taxConfig: createInitialTaxConfig(user.id),
+            });
+          }
         } else {
           // Sign-out: clear everything
           set({ user: null, profile: null, isDemoMode: false });
@@ -252,6 +267,36 @@ export const useAppStore = create<AppState>()(
           // Delete node and all its descendants
           categories: state.categories.filter((c) => !idsToDelete.has(c.id)),
         }));
+      },
+
+      initializeDefaultCategories: async (force = false) => {
+        const uid = get().user?.id || DEMO_USER_ID;
+        const currentCats = get().categories;
+
+        if (!force && currentCats.length >= 30) {
+          return;
+        }
+
+        if (isSupabaseConfigured && !get().isDemoMode && uid !== DEMO_USER_ID) {
+          try {
+            await supabase.rpc('initialize_my_categories');
+            const { data: dbCats, error } = await supabase
+              .from('categories')
+              .select('*')
+              .eq('user_id', uid)
+              .order('sort_order');
+            if (!error && dbCats && dbCats.length > 0) {
+              set({ categories: dbCats });
+              return;
+            }
+          } catch (e) {
+            console.error('Failed to initialize categories from Supabase RPC:', e);
+          }
+        }
+
+        // Fallback / local / demo population
+        const defaultCats = createInitialCategories(uid);
+        set({ categories: defaultCats });
       },
 
       // Transactions
@@ -402,66 +447,99 @@ export const useAppStore = create<AppState>()(
       },
 
       syncWithSupabase: async () => {
-        if (!isSupabaseConfigured || get().isDemoMode) return;
+        if (!isSupabaseConfigured) return;
         set({ isLoading: true });
         try {
-          const userRes = await supabase.auth.getUser();
-          const authUser = userRes.data?.user;
-          if (authUser) {
-            const uid = authUser.id;
-
-            // Fetch profile
-            const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', uid).single();
-            if (profileError && profileError.code !== 'PGRST116') {
-              console.warn('Profile fetch note:', profileError.message);
-            }
-
-            // Fetch categories
-            let { data: cats, error: catsError } = await supabase.from('categories').select('*').eq('user_id', uid).order('sort_order');
-            if (catsError) {
-              console.error('Error fetching categories from Supabase:', catsError);
-              throw catsError;
-            }
-
-            // Auto-seed default categories if user has none
-            if (!cats || cats.length === 0) {
-              try {
-                await supabase.rpc('initialize_my_categories');
-                // Re-fetch after seeding
-                const { data: seededCats, error: seededError } = await supabase.from('categories').select('*').eq('user_id', uid).order('sort_order');
-                if (!seededError && seededCats) {
-                  cats = seededCats;
-                }
-              } catch (seedErr) {
-                console.warn('Auto-seed categories failed (trigger may handle it):', seedErr);
-              }
-            }
-
-            // Fetch transactions
-            const { data: txs, error: txsError } = await supabase.from('transactions').select('*').eq('user_id', uid).order('transaction_date', { ascending: false });
-            if (txsError) {
-              console.error('Error fetching transactions from Supabase:', txsError);
-              throw txsError;
-            }
-
-            // Fetch tax config
-            const currentYear = new Date().getFullYear();
-            const { data: tax, error: taxError } = await supabase.from('tax_configs').select('*').eq('user_id', uid).eq('tax_year', currentYear).single();
-            if (taxError && taxError.code !== 'PGRST116') {
-              console.warn('Tax config fetch note:', taxError.message);
-            }
-
-            set((state) => ({
-              user: { id: uid, email: authUser.email || '' },
-              profile: profile || state.profile,
-              categories: cats ?? state.categories,
-              transactions: txs ?? state.transactions,
-              taxConfig: tax ?? state.taxConfig,
-            }));
+          // Check local session first
+          const sessionRes = await supabase.auth.getSession();
+          const authUser = sessionRes.data?.session?.user;
+          if (!authUser) {
+            set({ isLoading: false });
+            return;
           }
+
+          const uid = authUser.id;
+
+          // Ensure store is switched out of demo mode when real session is present
+          set({
+            isDemoMode: false,
+            user: { id: uid, email: authUser.email || '' },
+          });
+
+          // Fetch profile
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', uid)
+            .single();
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.warn('Profile fetch note:', profileError.message);
+          }
+
+          // Fetch categories
+          let { data: cats, error: catsError } = await supabase
+            .from('categories')
+            .select('*')
+            .eq('user_id', uid)
+            .order('sort_order');
+          if (catsError) {
+            console.error('Error fetching categories from Supabase:', catsError);
+          }
+
+          // Auto-seed default categories if user has none or has partial categories (< 30)
+          if (!cats || cats.length < 30) {
+            try {
+              await supabase.rpc('initialize_my_categories');
+              // Re-fetch after seeding
+              const { data: seededCats, error: seededError } = await supabase
+                .from('categories')
+                .select('*')
+                .eq('user_id', uid)
+                .order('sort_order');
+              if (!seededError && seededCats && seededCats.length > 0) {
+                cats = seededCats;
+              }
+            } catch (seedErr) {
+              console.warn('Auto-seed categories failed (trigger may handle it):', seedErr);
+            }
+          }
+
+          // Fetch transactions
+          const { data: txs, error: txsError } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', uid)
+            .order('transaction_date', { ascending: false });
+          if (txsError) {
+            console.error('Error fetching transactions from Supabase:', txsError);
+          }
+
+          // Fetch tax config
+          const currentYear = new Date().getFullYear();
+          const { data: tax, error: taxError } = await supabase
+            .from('tax_configs')
+            .select('*')
+            .eq('user_id', uid)
+            .eq('tax_year', currentYear)
+            .single();
+          if (taxError && taxError.code !== 'PGRST116') {
+            console.warn('Tax config fetch note:', taxError.message);
+          }
+
+          const resolvedCats = (cats && cats.length > 0)
+            ? cats
+            : (get().categories.length > 0 ? get().categories : createInitialCategories(uid));
+
+          set((state) => ({
+            user: { id: uid, email: authUser.email || '' },
+            profile: profile || state.profile,
+            isDemoMode: false,
+            categories: resolvedCats,
+            transactions: txs ?? state.transactions,
+            taxConfig: tax ?? state.taxConfig,
+          }));
         } catch (e) {
           console.error('Error syncing with Supabase:', e);
-          throw e;
         } finally {
           set({ isLoading: false });
         }

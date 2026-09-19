@@ -1,14 +1,12 @@
-// src/pages/CategoriesPage.tsx
-// Category Management Page with Income/Expense tabs and recursive tree editor
-
-import React, { useState } from 'react';
-import { Plus, ArrowDownCircle, ArrowUpCircle, FolderTree, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, ArrowDownCircle, ArrowUpCircle, FolderTree, AlertTriangle, RotateCcw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { CategoryTree } from '../components/categories/CategoryTree';
 import { CategoryForm } from '../components/categories/CategoryForm';
 import { useCategories } from '../hooks/useCategories';
+import { useAppStore } from '../stores/useAppStore';
 import type { Category, TransactionType } from '../lib/types';
 import { cn } from '../lib/utils';
 
@@ -17,6 +15,7 @@ export const CategoriesPage: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; childCount: number } | null>(null);
@@ -29,6 +28,23 @@ export const CategoriesPage: React.FC = () => {
     updateCategory,
     deleteCategory,
   } = useCategories();
+
+  const { initializeDefaultCategories, isLoading } = useAppStore();
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      initializeDefaultCategories();
+    }
+  }, [categories.length, initializeDefaultCategories]);
+
+  const handleRestoreDefaults = async () => {
+    setIsSeeding(true);
+    try {
+      await initializeDefaultCategories(true);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const handleOpenAdd = (parentId: string | null = null) => {
     setEditingCategory(null);
@@ -97,11 +113,27 @@ export const CategoriesPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Add Category Button */}
-        <Button onClick={() => handleOpenAdd(null)} className="min-h-[44px] touch-manipulation w-full sm:w-auto font-semibold">
-          <Plus className="h-4 w-4 mr-1.5" />
-          เพิ่มหมวดหมู่{activeTab === 'expense' ? 'รายจ่าย' : 'รายรับ'}
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={handleRestoreDefaults}
+            disabled={isSeeding || isLoading}
+            className="min-h-[44px] touch-manipulation gap-1.5 flex-1 sm:flex-initial"
+            title="รีเซ็ตและโหลดชุดหมวดหมู่เริ่มต้น (36 หมวดหมู่)"
+          >
+            <RotateCcw className={cn('h-4 w-4', (isSeeding || isLoading) && 'animate-spin text-emerald-600')} />
+            <span>{isSeeding ? 'กำลังโหลด...' : 'โหลดหมวดหมู่เริ่มต้น'}</span>
+          </Button>
+
+          <Button
+            onClick={() => handleOpenAdd(null)}
+            className="min-h-[44px] touch-manipulation font-semibold flex-1 sm:flex-initial"
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            <span>เพิ่มหมวดหมู่{activeTab === 'expense' ? 'รายจ่าย' : 'รายรับ'}</span>
+          </Button>
+        </div>
       </div>
 
       {/* Categories Tree Card */}
@@ -119,12 +151,26 @@ export const CategoriesPage: React.FC = () => {
         </CardHeader>
 
         <CardContent>
-          <CategoryTree
-            categories={currentTree}
-            onEdit={handleOpenEdit}
-            onDelete={handleDeleteRequest}
-            onAddSub={(parentId) => handleOpenAdd(parentId)}
-          />
+          {currentTree.length === 0 ? (
+            <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400 space-y-4">
+              <p>ยังไม่มีหมวดหมู่{activeTab === 'expense' ? 'รายจ่าย' : 'รายรับ'}ในรายการ</p>
+              <Button
+                onClick={handleRestoreDefaults}
+                disabled={isSeeding || isLoading}
+                className="gap-2 mx-auto"
+              >
+                <RotateCcw className={cn('h-4 w-4', (isSeeding || isLoading) && 'animate-spin')} />
+                <span>{isSeeding ? 'กำลังโหลดชุดหมวดหมู่...' : 'โหลดชุดหมวดหมู่เริ่มต้นทันที (36 หมวดหมู่)'}</span>
+              </Button>
+            </div>
+          ) : (
+            <CategoryTree
+              categories={currentTree}
+              onEdit={handleOpenEdit}
+              onDelete={handleDeleteRequest}
+              onAddSub={(parentId) => handleOpenAdd(parentId)}
+            />
+          )}
         </CardContent>
       </Card>
 
