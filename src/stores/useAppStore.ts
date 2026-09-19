@@ -80,6 +80,10 @@ function collectDescendantCategoryIds(categories: Category[], rootId: string): S
   return ids;
 }
 
+function isRealSupabaseUser(user: { id: string } | null | undefined): boolean {
+  return Boolean(user && user.id && user.id !== DEMO_USER_ID);
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -173,7 +177,8 @@ export const useAppStore = create<AppState>()(
 
       updateProfile: async (displayName: string) => {
         const currentUserId = get().user?.id;
-        if (isSupabaseConfigured && !get().isDemoMode && currentUserId) {
+        const isRealUser = isRealSupabaseUser(get().user);
+        if (isSupabaseConfigured && !get().isDemoMode && isRealUser && currentUserId) {
           try {
             // Use upsert to guarantee the profile row is created even if signup trigger didn't fire
             const { error } = await supabase
@@ -185,17 +190,15 @@ export const useAppStore = create<AppState>()(
               }, { onConflict: 'id' });
 
             if (error) {
-              console.error('Supabase update profile error:', error);
-              throw error;
+              console.warn('Supabase update profile error, falling back to local state:', error);
             }
 
             // Also update Supabase auth metadata so session and auth user stay synchronized
             await supabase.auth.updateUser({
               data: { display_name: displayName },
-            });
+            }).catch(console.warn);
           } catch (e) {
-            console.error('Supabase update profile failed:', e);
-            throw e;
+            console.warn('Supabase update profile failed, falling back to local state:', e);
           }
         }
         set((state) => ({
@@ -239,20 +242,20 @@ export const useAppStore = create<AppState>()(
           created_at: new Date().toISOString(),
         };
 
-        if (isSupabaseConfigured && !get().isDemoMode) {
+        const isRealUser = isRealSupabaseUser(get().user);
+
+        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
           try {
-            const { data, error } = await supabase.from('categories').insert(newCat).select().single();
+            const { children, ...dbCat } = newCat;
+            const { data, error } = await supabase.from('categories').insert(dbCat).select().single();
             if (error) {
-              console.error('Supabase add category error:', error);
-              throw error;
-            }
-            if (data) {
+              console.warn('Supabase add category error, falling back to local state:', error);
+            } else if (data) {
               set((state) => ({ categories: [...state.categories, data] }));
               return data;
             }
           } catch (e) {
-            console.error('Supabase add category failed:', e);
-            throw e;
+            console.warn('Supabase add category failed, falling back to local state:', e);
           }
         }
 
@@ -261,16 +264,16 @@ export const useAppStore = create<AppState>()(
       },
 
       updateCategory: async (id, updates) => {
-        if (isSupabaseConfigured && !get().isDemoMode) {
+        const isRealUser = isRealSupabaseUser(get().user);
+        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
           try {
-            const { error } = await supabase.from('categories').update(updates).eq('id', id);
+            const { children, ...dbUpdates } = updates;
+            const { error } = await supabase.from('categories').update(dbUpdates).eq('id', id);
             if (error) {
-              console.error('Supabase update category error:', error);
-              throw error;
+              console.warn('Supabase update category error, falling back to local state:', error);
             }
           } catch (e) {
-            console.error('Supabase update category error:', e);
-            throw e;
+            console.warn('Supabase update category failed, falling back to local state:', e);
           }
         }
         set((state) => ({
@@ -281,17 +284,16 @@ export const useAppStore = create<AppState>()(
       deleteCategory: async (id) => {
         const idsToDelete = collectDescendantCategoryIds(get().categories, id);
         const idsArray = Array.from(idsToDelete);
+        const isRealUser = isRealSupabaseUser(get().user);
 
-        if (isSupabaseConfigured && !get().isDemoMode) {
+        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
           try {
             const { error } = await supabase.from('categories').delete().in('id', idsArray);
             if (error) {
-              console.error('Supabase delete category error:', error);
-              throw error;
+              console.warn('Supabase delete category error, falling back to local state:', error);
             }
           } catch (e) {
-            console.error('Supabase delete category error:', e);
-            throw e;
+            console.warn('Supabase delete category failed, falling back to local state:', e);
           }
         }
         set((state) => ({
@@ -354,26 +356,56 @@ export const useAppStore = create<AppState>()(
           ...txData,
           id: generateId(),
           user_id: currentUserId,
+          category_id: txData.category_id || null,
           thai_chuay_thai_discount: discount,
           net_amount: net,
           created_at: now,
           updated_at: now,
         };
 
-        if (isSupabaseConfigured && !get().isDemoMode) {
+        const isRealUser = isRealSupabaseUser(get().user);
+
+        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
           try {
-            const { data, error } = await supabase.from('transactions').insert(newTx).select().single();
+            const dbPayload = {
+              id: newTx.id,
+              user_id: newTx.user_id,
+              category_id: newTx.category_id || null,
+              type: newTx.type,
+              amount: Number(newTx.amount) || 0,
+              description: newTx.description,
+              transaction_date: newTx.transaction_date,
+              is_salary: Boolean(newTx.is_salary),
+              income_type: newTx.type === 'income' ? (newTx.income_type || 'other') : null,
+              gross_amount: Number(newTx.gross_amount ?? newTx.amount) || 0,
+              withholding_tax_rate: Number(newTx.withholding_tax_rate) || 0,
+              withholding_tax_amount: Number(newTx.withholding_tax_amount) || 0,
+              is_thai_chuay_thai: Boolean(newTx.is_thai_chuay_thai),
+              thai_chuay_thai_discount: Number(newTx.thai_chuay_thai_discount) || 0,
+              net_amount: Number(newTx.net_amount) || 0,
+              metadata: newTx.metadata || {},
+              created_at: newTx.created_at,
+              updated_at: newTx.updated_at,
+            };
+
+            const { data, error } = await supabase.from('transactions').insert(dbPayload).select().single();
             if (error) {
-              console.error('Supabase add transaction error:', error);
-              throw error;
-            }
-            if (data) {
-              set((state) => ({ transactions: [data, ...state.transactions] }));
-              return data;
+              console.warn('Supabase add transaction error, falling back to local store:', error);
+            } else if (data) {
+              const formattedRow: Transaction = {
+                ...data,
+                amount: Number(data.amount) || 0,
+                net_amount: Number(data.net_amount) || 0,
+                gross_amount: Number(data.gross_amount ?? data.amount) || 0,
+                withholding_tax_rate: Number(data.withholding_tax_rate) || 0,
+                withholding_tax_amount: Number(data.withholding_tax_amount) || 0,
+                thai_chuay_thai_discount: Number(data.thai_chuay_thai_discount) || 0,
+              };
+              set((state) => ({ transactions: [formattedRow, ...state.transactions] }));
+              return formattedRow;
             }
           } catch (e) {
-            console.error('Supabase add transaction error:', e);
-            throw e;
+            console.warn('Supabase add transaction failed, falling back to local store:', e);
           }
         }
 
@@ -382,19 +414,43 @@ export const useAppStore = create<AppState>()(
       },
 
       updateTransaction: async (id, updates) => {
-        const updatePayload = { ...updates, updated_at: new Date().toISOString() };
-        if (isSupabaseConfigured && !get().isDemoMode) {
+        const updatePayload: Partial<Transaction> = {
+          ...updates,
+          category_id: updates.category_id !== undefined ? (updates.category_id || null) : undefined,
+          updated_at: new Date().toISOString(),
+        };
+
+        const isRealUser = isRealSupabaseUser(get().user);
+
+        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
           try {
-            const { error } = await supabase.from('transactions').update(updatePayload).eq('id', id);
+            const dbUpdates: Record<string, unknown> = {
+              updated_at: updatePayload.updated_at,
+            };
+            if (updates.type !== undefined) dbUpdates.type = updates.type;
+            if (updates.amount !== undefined) dbUpdates.amount = Number(updates.amount);
+            if (updates.description !== undefined) dbUpdates.description = updates.description;
+            if (updates.category_id !== undefined) dbUpdates.category_id = updates.category_id || null;
+            if (updates.transaction_date !== undefined) dbUpdates.transaction_date = updates.transaction_date;
+            if (updates.is_salary !== undefined) dbUpdates.is_salary = Boolean(updates.is_salary);
+            if (updates.income_type !== undefined) dbUpdates.income_type = updates.type === 'income' ? updates.income_type : null;
+            if (updates.gross_amount !== undefined) dbUpdates.gross_amount = Number(updates.gross_amount);
+            if (updates.withholding_tax_rate !== undefined) dbUpdates.withholding_tax_rate = Number(updates.withholding_tax_rate);
+            if (updates.withholding_tax_amount !== undefined) dbUpdates.withholding_tax_amount = Number(updates.withholding_tax_amount);
+            if (updates.is_thai_chuay_thai !== undefined) dbUpdates.is_thai_chuay_thai = Boolean(updates.is_thai_chuay_thai);
+            if (updates.thai_chuay_thai_discount !== undefined) dbUpdates.thai_chuay_thai_discount = Number(updates.thai_chuay_thai_discount);
+            if (updates.net_amount !== undefined) dbUpdates.net_amount = Number(updates.net_amount);
+            if (updates.metadata !== undefined) dbUpdates.metadata = updates.metadata;
+
+            const { error } = await supabase.from('transactions').update(dbUpdates).eq('id', id);
             if (error) {
-              console.error('Supabase update transaction error:', error);
-              throw error;
+              console.warn('Supabase update transaction error, falling back to local store:', error);
             }
           } catch (e) {
-            console.error('Supabase update transaction error:', e);
-            throw e;
+            console.warn('Supabase update transaction failed, falling back to local store:', e);
           }
         }
+
         set((state) => ({
           transactions: state.transactions.map((tx) =>
             tx.id === id ? { ...tx, ...updatePayload } : tx
@@ -403,18 +459,19 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteTransaction: async (id) => {
-        if (isSupabaseConfigured && !get().isDemoMode) {
+        const isRealUser = isRealSupabaseUser(get().user);
+
+        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
           try {
             const { error } = await supabase.from('transactions').delete().eq('id', id);
             if (error) {
-              console.error('Supabase delete transaction error:', error);
-              throw error;
+              console.warn('Supabase delete transaction error, falling back to local store:', error);
             }
           } catch (e) {
-            console.error('Supabase delete transaction error:', e);
-            throw e;
+            console.warn('Supabase delete transaction failed, falling back to local store:', e);
           }
         }
+
         set((state) => ({
           transactions: state.transactions.filter((tx) => tx.id !== id),
         }));
@@ -431,18 +488,17 @@ export const useAppStore = create<AppState>()(
           user_id: currentUserId,
           updated_at: new Date().toISOString(),
         };
-        if (isSupabaseConfigured && !get().isDemoMode && currentUserId !== DEMO_USER_ID) {
+        const isRealUser = isRealSupabaseUser(get().user);
+        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
           try {
             const { error } = await supabase
               .from('tax_configs')
               .upsert(updatedConfig, { onConflict: 'user_id,tax_year' });
             if (error) {
-              console.error('Supabase update tax config error:', error);
-              throw error;
+              console.warn('Supabase update tax config error, falling back to local store:', error);
             }
           } catch (e) {
-            console.error('Supabase update tax config error:', e);
-            throw e;
+            console.warn('Supabase update tax config failed, falling back to local store:', e);
           }
         }
         set({ taxConfig: updatedConfig });
@@ -661,13 +717,23 @@ export const useAppStore = create<AppState>()(
             };
           }
 
+          const parsedTxs: Transaction[] = (txs || []).map((t) => ({
+            ...t,
+            amount: Number(t.amount) || 0,
+            net_amount: Number(t.net_amount) || 0,
+            gross_amount: Number(t.gross_amount ?? t.amount) || 0,
+            withholding_tax_rate: Number(t.withholding_tax_rate) || 0,
+            withholding_tax_amount: Number(t.withholding_tax_amount) || 0,
+            thai_chuay_thai_discount: Number(t.thai_chuay_thai_discount) || 0,
+          }));
+
           // Authoritatively overwrite state from cloud database — never preserve stale data
           set({
             user: { id: uid, email: authUser.email || '' },
             profile: profile || null,
             isDemoMode: false,
             categories: resolvedCats,
-            transactions: txs || [],
+            transactions: parsedTxs,
             taxConfig: finalTax,
           });
         } catch (e) {

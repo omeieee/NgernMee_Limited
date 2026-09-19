@@ -52,7 +52,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [customWhtAmount, setCustomWhtAmount] = useState<string>(
     initialData?.withholding_tax_amount ? String(initialData.withholding_tax_amount) : ''
   );
-  const [errors, setErrors] = useState<{ amount?: string; description?: string }>({});
+  const [errors, setErrors] = useState<{ amount?: string; description?: string; form?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Hook for Thai Chuay Thai calculations and limits
@@ -96,6 +96,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     if (!validate()) return;
 
     setIsSubmitting(true);
+    setErrors((prev) => ({ ...prev, form: undefined }));
+
     try {
       let discount = 0;
       let net = numAmount;
@@ -123,7 +125,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         amount: numAmount,
         gross_amount: gross,
         description: description.trim(),
-        category_id: categoryId,
+        category_id: categoryId || null,
         transaction_date: transactionDate,
         is_salary: type === 'income' ? incomeType === 'salary' : false,
         income_type: type === 'income' ? incomeType : undefined,
@@ -142,6 +144,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         setHasWht(false);
         setCustomWhtAmount('');
       }
+    } catch (err) {
+      console.error('Submit transaction failed:', err);
+      setErrors((prev) => ({
+        ...prev,
+        form: err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง',
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -149,6 +157,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Error Alert Banner */}
+      {errors.form && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300 flex items-center justify-between">
+          <span>{errors.form}</span>
+          <button
+            type="button"
+            onClick={() => setErrors((prev) => ({ ...prev, form: undefined }))}
+            className="text-rose-500 hover:text-rose-700 ml-2 font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Type Toggle: Expense / Income */}
       <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/80">
         <button
