@@ -27,6 +27,8 @@ export interface AppState {
   profile: Profile | null;
   isDemoMode: boolean;
   isLoading: boolean;
+  authLoading: boolean;
+  setAuthLoading: (loading: boolean) => void;
   setUser: (user: { id: string; email: string } | null, profile?: Profile | null) => void;
   setDemoMode: (enabled: boolean) => void;
   updateProfile: (displayName: string) => Promise<void>;
@@ -103,6 +105,8 @@ export const useAppStore = create<AppState>()(
       profile: isSupabaseConfigured ? null : DEMO_PROFILE,
       isDemoMode: !isSupabaseConfigured,
       isLoading: false,
+      authLoading: isSupabaseConfigured,
+      setAuthLoading: (authLoading) => set({ authLoading }),
 
       setUser: (user, profile) => {
         if (user) {
@@ -420,8 +424,14 @@ export const useAppStore = create<AppState>()(
       taxConfig: createInitialTaxConfig(DEMO_USER_ID),
 
       updateTaxConfig: async (updates) => {
-        const updatedConfig = { ...get().taxConfig, ...updates, updated_at: new Date().toISOString() };
-        if (isSupabaseConfigured && !get().isDemoMode) {
+        const currentUserId = get().user?.id || DEMO_USER_ID;
+        const updatedConfig = {
+          ...get().taxConfig,
+          ...updates,
+          user_id: currentUserId,
+          updated_at: new Date().toISOString(),
+        };
+        if (isSupabaseConfigured && !get().isDemoMode && currentUserId !== DEMO_USER_ID) {
           try {
             const { error } = await supabase
               .from('tax_configs')
@@ -591,6 +601,19 @@ export const useAppStore = create<AppState>()(
             ? cats
             : createInitialCategories(uid);
 
+          let finalTax = tax || createInitialTaxConfig(uid);
+          if (finalTax) {
+            finalTax = {
+              ...finalTax,
+              user_id: uid,
+              monthly_salary: Number(finalTax.monthly_salary) || 0,
+              annual_salary: Number(finalTax.annual_salary) || 0,
+              personal_allowance: Number(finalTax.personal_allowance) || 60000,
+              expense_deduction: Number(finalTax.expense_deduction) || 100000,
+              social_security: Number(finalTax.social_security) || 9000,
+            };
+          }
+
           // Authoritatively overwrite state from cloud database — never preserve stale data
           set({
             user: { id: uid, email: authUser.email || '' },
@@ -598,7 +621,7 @@ export const useAppStore = create<AppState>()(
             isDemoMode: false,
             categories: resolvedCats,
             transactions: txs || [],
-            taxConfig: tax || createInitialTaxConfig(uid),
+            taxConfig: finalTax,
           });
         } catch (e) {
           console.error('Error syncing with Supabase:', e);
@@ -611,6 +634,12 @@ export const useAppStore = create<AppState>()(
       name: 'ngernmee-storage',
       partialize: (state) => ({
         theme: state.theme,
+        user: state.user,
+        profile: state.profile,
+        isDemoMode: state.isDemoMode,
+        categories: state.categories,
+        transactions: state.transactions,
+        taxConfig: state.taxConfig,
       }),
     }
   )

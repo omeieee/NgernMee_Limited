@@ -39,8 +39,8 @@ jobs:
 
       - name: Build project
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://rtwcezjrjrmworfnmvsk.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0d2NlempyanJtd29yZm5tdnNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NTM4MjcsImV4cCI6MjEwNTMyOTgyN30.yt42IAZoBPW8-C6GniW8Sv6KdktnyGVrYqW2HwssztE' }}
         run: |
           npm run build
           cp dist/index.html dist/404.html

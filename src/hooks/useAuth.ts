@@ -1,7 +1,7 @@
 // src/hooks/useAuth.ts
 // Authentication hook managing Supabase Auth and Instant Demo Mode
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAppStore } from '../stores/useAppStore';
 
@@ -17,75 +17,90 @@ function getOfflineUserId(email: string): string {
   }
 }
 
+// Module-level singleton initialization — runs exactly once globally across the entire app
+let authInitialized = false;
+
+export function initializeAuth() {
+  if (authInitialized) return;
+  authInitialized = true;
+
+  if (!isSupabaseConfigured) {
+    useAppStore.getState().setAuthLoading(false);
+    return;
+  }
+
+  // 1. Listen for Supabase auth state changes globally (fires INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, etc.)
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    const store = useAppStore.getState();
+
+    if (event === 'SIGNED_OUT') {
+      store.setUser(null, null);
+      store.setAuthLoading(false);
+    } else if (
+      event === 'INITIAL_SESSION' ||
+      event === 'SIGNED_IN' ||
+      event === 'USER_UPDATED' ||
+      event === 'TOKEN_REFRESHED'
+    ) {
+      if (session?.user) {
+        store.setUser({ id: session.user.id, email: session.user.email || '' });
+        await store.syncWithSupabase().catch(console.error);
+      } else {
+        // If INITIAL_SESSION has no user and store is not in demo mode, clear stale user
+        if (!store.isDemoMode) {
+          store.setUser(null, null);
+        }
+      }
+      store.setAuthLoading(false);
+    }
+  });
+
+  // 2. Also run initial getSession check to verify or restore session
+  supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+    const store = useAppStore.getState();
+    if (error) {
+      console.warn('Initial getSession error:', error);
+    }
+    if (session?.user) {
+      store.setUser({ id: session.user.id, email: session.user.email || '' });
+      await store.syncWithSupabase().catch(console.error);
+    } else if (!store.isDemoMode) {
+      store.setUser(null, null);
+    }
+    store.setAuthLoading(false);
+  }).catch((err) => {
+    console.error('Session init failed:', err);
+    useAppStore.getState().setAuthLoading(false);
+  });
+}
+
+// Automatically initialize auth once at module evaluation
+initializeAuth();
+
 export function useAuth() {
-  const { user, profile, isDemoMode, setUser, setDemoMode, signOut: storeSignOut, syncWithSupabase } = useAppStore();
-  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const {
+    user,
+    profile,
+    isDemoMode,
+    authLoading,
+    setUser,
+    setDemoMode,
+    signOut: storeSignOut,
+    syncWithSupabase,
+  } = useAppStore();
+
+  const [submitting, setSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-
-    async function initAuth() {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Session retrieval error:', error);
-        }
-        if (!isMounted) return;
-
-        if (session?.user) {
-          useAppStore.getState().setUser({ id: session.user.id, email: session.user.email || '' });
-          await useAppStore.getState().syncWithSupabase();
-        }
-      } catch (err) {
-        console.error('Initial session check failed:', err);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    initAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!isMounted) return;
-
-      if (event === 'SIGNED_OUT') {
-        useAppStore.getState().setUser(null, null);
-      } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        if (session?.user) {
-          const currentUserId = useAppStore.getState().user?.id;
-          useAppStore.getState().setUser({ id: session.user.id, email: session.user.email || '' });
-          if (currentUserId !== session.user.id) {
-            await useAppStore.getState().syncWithSupabase().catch(console.error);
-          }
-        }
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
   const signIn = async (email: string, password: string): Promise<boolean> => {
-    setLoading(true);
+    setSubmitting(true);
     setAuthError(null);
 
     if (!isSupabaseConfigured) {
       // Deterministic offline fallback: keeps data accessible across reloads
       const offlineId = getOfflineUserId(email);
       setUser({ id: offlineId, email });
-      setLoading(false);
+      setSubmitting(false);
       return true;
     }
 
@@ -93,7 +108,7 @@ export function useAuth() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setAuthError(error.message);
-        setLoading(false);
+        setSubmitting(false);
         return false;
       }
       if (data.user) {
@@ -101,18 +116,18 @@ export function useAuth() {
         // Fetch authoritative profile name, categories and transactions from Supabase
         await syncWithSupabase();
       }
-      setLoading(false);
+      setSubmitting(false);
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
       setAuthError(message);
-      setLoading(false);
+      setSubmitting(false);
       return false;
     }
   };
 
   const signUp = async (email: string, password: string, displayName?: string): Promise<boolean> => {
-    setLoading(true);
+    setSubmitting(true);
     setAuthError(null);
 
     if (!isSupabaseConfigured) {
@@ -124,7 +139,7 @@ export function useAuth() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
-      setLoading(false);
+      setSubmitting(false);
       return true;
     }
 
@@ -141,7 +156,7 @@ export function useAuth() {
 
       if (error) {
         setAuthError(error.message);
-        setLoading(false);
+        setSubmitting(false);
         return false;
       }
 
@@ -163,12 +178,12 @@ export function useAuth() {
 
         await syncWithSupabase();
       }
-      setLoading(false);
+      setSubmitting(false);
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการลงทะเบียน';
       setAuthError(message);
-      setLoading(false);
+      setSubmitting(false);
       return false;
     }
   };
@@ -186,7 +201,7 @@ export function useAuth() {
     profile,
     isAuthenticated: Boolean(user || isDemoMode),
     isDemoMode,
-    loading,
+    loading: authLoading || submitting,
     authError,
     signIn,
     signUp,
