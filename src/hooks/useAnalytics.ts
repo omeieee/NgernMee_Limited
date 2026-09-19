@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import { useCategories } from './useCategories';
 import { calculateTax } from '../lib/thaiTax';
+import { calculateCashflowRunway, analyzeIncomeStreams } from '../lib/cashflowIntelligence';
 import type { Transaction } from '../lib/types';
 
 export type TimePeriod = 'this_month' | 'last_month' | 'this_year' | 'all' | 'custom';
@@ -184,14 +185,21 @@ export function useAnalytics(period: TimePeriod = 'this_month', customStart?: st
       .slice(0, 10);
   }, [periodTransactions]);
 
-  // Tax calculation memoized with stable state dependencies
+  // Multi-stream income analysis for the period
+  const incomeAnalysis = useMemo(() => {
+    return analyzeIncomeStreams(periodTransactions);
+  }, [periodTransactions]);
+
+  // Cashflow runway calculation based on current liquidity and baseline needs
+  const runway = useMemo(() => {
+    return calculateCashflowRunway(transactions, categoriesMap);
+  }, [transactions, categoriesMap]);
+
+  // Tax calculation memoized with full multi-stream support from app store
+  const { getTaxCalculation } = useAppStore();
   const taxCalculation = useMemo(() => {
-    const salaryTransactionsSum = transactions
-      .filter((tx) => tx.type === 'income' && tx.is_salary && tx.transaction_date.startsWith(String(taxConfig.tax_year)))
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const grossIncome = salaryTransactionsSum > 0 ? salaryTransactionsSum : taxConfig.annual_salary;
-    return calculateTax(grossIncome, taxConfig.additional_deductions, taxConfig.tax_year);
-  }, [transactions, taxConfig]);
+    return getTaxCalculation();
+  }, [getTaxCalculation, transactions, taxConfig]);
 
   return {
     startDate,
@@ -200,6 +208,8 @@ export function useAnalytics(period: TimePeriod = 'this_month', customStart?: st
     trendData,
     categorySpending,
     frequentItems,
+    incomeAnalysis,
+    runway,
     taxCalculation,
     transactionCount: periodTransactions.length,
   };

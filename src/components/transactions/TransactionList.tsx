@@ -6,6 +6,8 @@ import {
   Edit2,
   Trash2,
   Briefcase,
+  Gift,
+  Coffee,
   Search,
   Filter,
   ArrowDownRight,
@@ -167,7 +169,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <span className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
                               {tx.description}
                             </span>
@@ -176,10 +178,27 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                                 สิทธิเสริม 60/40
                               </Badge>
                             )}
-                            {tx.is_salary && (
+                            {tx.income_type === 'allowance' && (
+                              <Badge variant="warning" className="text-[10px]">
+                                <Gift className="h-2.5 w-2.5 mr-0.5" />
+                                ค่าขนม (ยกเว้นภาษี)
+                              </Badge>
+                            )}
+                            {tx.income_type === 'freelance_part_time' && (
+                              <Badge variant="thaiChuayThai" className="text-[10px]">
+                                <Coffee className="h-2.5 w-2.5 mr-0.5" />
+                                พาร์ทไทม์ 40(2)
+                              </Badge>
+                            )}
+                            {(tx.income_type === 'salary' || tx.is_salary) && (
                               <Badge variant="success" className="text-[10px]">
                                 <Briefcase className="h-2.5 w-2.5 mr-0.5" />
-                                เงินเดือน
+                                เงินเดือน 40(1)
+                              </Badge>
+                            )}
+                            {Boolean(tx.withholding_tax_amount && tx.withholding_tax_amount > 0) && (
+                              <Badge variant="secondary" className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                                หัก {tx.withholding_tax_rate || 3}% ({formatCurrency(tx.withholding_tax_amount || 0)})
                               </Badge>
                             )}
                           </div>

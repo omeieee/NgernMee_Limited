@@ -15,6 +15,9 @@ import {
   Calendar,
   Wallet,
   PiggyBank,
+  ShieldAlert,
+  ShieldCheck,
+  Clock,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -25,6 +28,7 @@ import { TransactionForm } from '../components/transactions/TransactionForm';
 import { useAppStore } from '../stores/useAppStore';
 import { useCategories } from '../hooks/useCategories';
 import { useThaiChuayThai } from '../hooks/useThaiChuayThai';
+import { calculateCashflowRunway } from '../lib/cashflowIntelligence';
 import { formatCurrency, formatThaiDate, cn } from '../lib/utils';
 import {
   AreaChart,
@@ -104,6 +108,11 @@ export const DashboardPage: React.FC = () => {
     });
   }, [transactions]);
 
+  // Cashflow runway calculation for irregular earners & students
+  const runway = useMemo(() => {
+    return calculateCashflowRunway(transactions, categoriesMap, now);
+  }, [transactions, categoriesMap, now]);
+
   const handleQuickAddSubmit = async (
     data: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>
   ) => {
@@ -179,21 +188,19 @@ export const DashboardPage: React.FC = () => {
             <CardDescription className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
               เงินออมสุทธิ
             </CardDescription>
-            <div className="p-1.5 sm:p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+            <div className="p-1.5 sm:p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400">
               <PiggyBank className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </CardHeader>
           <CardContent className="p-0 pt-1.5 sm:pt-2">
-            <div
-              className={cn(
-                'text-base sm:text-2xl font-bold tracking-tight tabular-nums',
-                monthSavings >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600'
-              )}
-            >
-              {formatCurrency(monthSavings)}
+            <div className={cn(
+              'text-base sm:text-2xl font-bold tracking-tight tabular-nums',
+              monthSavings >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+            )}>
+              {monthSavings >= 0 ? `+${formatCurrency(monthSavings)}` : formatCurrency(monthSavings)}
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 truncate">
-              ออม {monthIncome > 0 ? ((monthSavings / monthIncome) * 100).toFixed(0) : 0}% ของรับ
+              {monthIncome > 0 ? `อัตราออม ${Math.round((monthSavings / monthIncome) * 100)}%` : 'ยังไม่มีรายรับ'}
             </p>
           </CardContent>
         </Card>
@@ -217,6 +224,77 @@ export const DashboardPage: React.FC = () => {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Cashflow Runway & Financial Safety Widget (Crucial for students & irregular earners) */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+              <Clock className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>ระยะเวลาปลอดภัยทางการเงิน (Cashflow Runway)</span>
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                ประเมินว่าเงินเก็บปัจจุบันจะสามารถประคองค่าใช้จ่ายจำเป็นได้นานเท่าใด หากไม่มีรายรับใหม่
+              </p>
+            </div>
+          </div>
+
+          <span className={cn(
+            'inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border self-start sm:self-auto',
+            runway.runwayMonths >= 3
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60'
+              : runway.runwayMonths >= 1
+              ? 'bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60'
+              : 'bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60'
+          )}>
+            {runway.runwayMonths >= 3 ? (
+              <>
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>สภาพคล่องปลอดภัยสูง</span>
+              </>
+            ) : runway.runwayMonths >= 1 ? (
+              <>
+                <Clock className="h-3.5 w-3.5" />
+                <span>สภาพคล่องปานกลาง</span>
+              </>
+            ) : (
+              <>
+                <ShieldAlert className="h-3.5 w-3.5" />
+                <span>สภาพคล่องตึงตัว</span>
+              </>
+            )}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 text-xs">
+          <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
+            <span className="text-slate-400 block text-[11px]">เงินสำรองปัจจุบันอยู่ได้อีก:</span>
+            <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
+              ~{runway.runwayMonths} เดือน <span className="text-xs font-normal text-slate-500">({runway.runwayDays} วัน)</span>
+            </div>
+            <span className="text-[10px] text-slate-400">จากยอดเงินสดคงเหลือ {formatCurrency(runway.currentLiquidBalance)}</span>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
+            <span className="text-slate-400 block text-[11px]">ค่าใช้จ่ายจำเป็นคงที่ (Baseline Needs):</span>
+            <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
+              {formatCurrency(runway.monthlyEssentialExpenses)} <span className="text-xs font-normal text-slate-500">/ เดือน</span>
+            </div>
+            <span className="text-[10px] text-slate-400">ค่าหอพัก น้ำไฟ อาหารหลัก ค่าเดินทาง</span>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
+            <span className="text-slate-400 block text-[11px]">งบปลอดภัยเฉลี่ยที่ใช้ได้:</span>
+            <div className="text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+              {formatCurrency(runway.safeDailySpend)} <span className="text-xs font-normal text-slate-500">/ วัน</span>
+            </div>
+            <span className="text-[10px] text-slate-400">คำนวณจากวันคงเหลือในเดือนนี้</span>
+          </div>
+        </div>
       </div>
 
       {/* 7-Day Trend Chart & Thai Chuay Thai Quota Banner */}

@@ -110,9 +110,11 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
 ];
 
 export const DEFAULT_INCOME_CATEGORIES = [
+  { name: 'เงินจากครอบครัว / ค่าขนม', icon: 'gift', color: '#f59e0b' },
+  { name: 'งานพาร์ทไทม์ / สอนพิเศษ', icon: 'coffee', color: '#06b6d4' },
   { name: 'เงินเดือน', icon: 'briefcase', color: '#10b981' },
-  { name: 'งานฟรีแลนซ์ / รายได้เสริม', icon: 'laptop', color: '#06b6d4' },
+  { name: 'งานฟรีแลนซ์ / รายได้เสริม', icon: 'laptop', color: '#3b82f6' },
   { name: 'ผลตอบแทนจากการลงทุน', icon: 'trending-up', color: '#8b5cf6' },
-  { name: 'ของขวัญ / โบนัส', icon: 'gift', color: '#ec4899' },
+  { name: 'ทุนการศึกษา / เงินรางวัล', icon: 'graduation-cap', color: '#10b981' },
   { name: 'รายได้อื่นๆ', icon: 'more-horizontal', color: '#64748b' },
 ];

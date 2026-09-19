@@ -28,29 +28,39 @@ export function exportTransactionsToCSV(
     'ประเภท',
     'หมวดหมู่',
     'รายละเอียด',
+    'ประเภทรายได้ (Income Type)',
     'ยอดเงินเต็ม (บาท)',
     'คนละครึ่ง/ไทยช่วยไทย',
     'รัฐช่วยจ่าย (บาท)',
-    'ยอดจ่ายสุทธิ (บาท)',
-    'เงินเดือน (คำนวณภาษี)',
+    'ภาษีหัก ณ ที่จ่าย WHT (บาท)',
+    'ยอดสุทธิเข้า/ออก (บาท)',
   ];
 
   const rows = transactions.map((tx) => {
     const categoryName = tx.category_id ? categoriesMap.get(tx.category_id)?.name || 'ทั่วไป' : 'อื่นๆ';
     const typeLabel = tx.type === 'income' ? 'รายรับ' : 'รายจ่าย';
     const isThaiChuayThai = tx.is_thai_chuay_thai ? 'ใช่ (60/40)' : 'ไม่ใช่';
-    const isSalary = tx.is_salary ? 'ใช่' : 'ไม่ใช่';
+    
+    let incomeTypeLabel = '-';
+    if (tx.type === 'income') {
+      if (tx.income_type === 'allowance') incomeTypeLabel = 'เงินจากครอบครัว/ค่าขนม (ยกเว้นภาษี)';
+      else if (tx.income_type === 'freelance_part_time') incomeTypeLabel = 'พาร์ทไทม์/ฟรีแลนซ์ (40(2))';
+      else if (tx.income_type === 'salary' || tx.is_salary) incomeTypeLabel = 'เงินเดือน (40(1))';
+      else if (tx.income_type === 'scholarship') incomeTypeLabel = 'ทุนการศึกษา (ยกเว้นภาษี)';
+      else incomeTypeLabel = 'รายรับอื่นๆ';
+    }
 
     return [
       `"${tx.transaction_date}"`,
       `"${typeLabel}"`,
       sanitizeCsvField(categoryName),
       sanitizeCsvField(tx.description),
+      `"${incomeTypeLabel}"`,
       tx.amount.toFixed(2),
       `"${isThaiChuayThai}"`,
       (tx.thai_chuay_thai_discount || 0).toFixed(2),
+      (tx.withholding_tax_amount || 0).toFixed(2),
       tx.net_amount.toFixed(2),
-      `"${isSalary}"`,
     ].join(',');
   });
 
@@ -68,12 +78,17 @@ export function exportTaxReportToCSV(taxResult: TaxCalculationResult): void {
     `วันที่คำนวณ,"${formatThaiDate(new Date(), 'long')}"`,
     '',
     'รายการ,จำนวนเงิน (บาท)',
-    `เงินได้พึงประเมินทั้งปี (รายได้รวม),${taxResult.grossIncome.toFixed(2)}`,
+    `เงินได้พึงประเมินทั้งปี (40(1) และ 40(2)),${taxResult.grossIncome.toFixed(2)}`,
+    `เงินได้ยกเว้นภาษี (ค่าขนมจากครอบครัว/ทุน),${taxResult.exemptIncome.toFixed(2)}`,
     `หักค่าใช้จ่ายและค่าลดหย่อนมาตรฐาน,${taxResult.standardDeductions.toFixed(2)}`,
     `หักค่าลดหย่อนเพิ่มเติมอื่นๆ,${taxResult.additionalDeductionsTotal.toFixed(2)}`,
     `รวมค่าลดหย่อนทั้งหมด,${taxResult.totalDeductions.toFixed(2)}`,
     `เงินได้สุทธิที่ต้องเสียภาษี,${taxResult.netTaxableIncome.toFixed(2)}`,
-    `ภาษีที่ต้องชำระทั้งสิ้น,${taxResult.totalTax.toFixed(2)}`,
+    `ภาษีคำนวณได้ทั้งสิ้น,${taxResult.totalTax.toFixed(2)}`,
+    `ภาษีหัก ณ ที่จ่ายสะสม (50 ทวิ),${taxResult.totalWithholdingTax.toFixed(2)}`,
+    taxResult.isEligibleForRefund
+      ? `ยอดเงินที่ขอคืนภาษีได้ (Tax Refund),+${taxResult.taxRefund.toFixed(2)}`
+      : `ภาษีที่ต้องชำระสุทธิ (Net Tax Payable),${taxResult.netTaxPayable.toFixed(2)}`,
     `อัตราภาษีที่แท้จริง (Effective Rate),${taxResult.effectiveRate.toFixed(2)}%`,
     '',
     'รายละเอียดการคำนวณตามขั้นบันไดภาษี',

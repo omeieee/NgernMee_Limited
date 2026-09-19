@@ -450,18 +450,65 @@ export const useAppStore = create<AppState>()(
 
       getTaxCalculation: (overrideGrossIncome?: number) => {
         const { taxConfig, transactions } = get();
-        let grossIncome: number;
         if (typeof overrideGrossIncome === 'number') {
-          grossIncome = overrideGrossIncome;
-        } else {
-          // Calculate annual salary: prefer transaction salary sum if present, otherwise configured annual salary
-          const salaryTransactionsSum = transactions
-            .filter((tx) => tx.type === 'income' && tx.is_salary && tx.transaction_date.startsWith(String(taxConfig.tax_year)))
-            .reduce((sum, tx) => sum + tx.amount, 0);
-
-          grossIncome = salaryTransactionsSum > 0 ? salaryTransactionsSum : taxConfig.annual_salary;
+          return calculateTax(overrideGrossIncome, taxConfig.additional_deductions, taxConfig.tax_year);
         }
-        return calculateTax(grossIncome, taxConfig.additional_deductions, taxConfig.tax_year);
+
+        const yearStr = String(taxConfig.tax_year);
+        const yearTxs = transactions.filter(
+          (tx) => tx.type === 'income' && tx.transaction_date.startsWith(yearStr)
+        );
+
+        let salary40_1 = 0;
+        let freelance40_2 = 0;
+        let allowanceExempt = 0;
+        let scholarshipExempt = 0;
+        let otherTaxable = 0;
+        let withholdingTaxTotal = 0;
+
+        for (const tx of yearTxs) {
+          const wht = tx.withholding_tax_amount || 0;
+          withholdingTaxTotal += wht;
+
+          // Differentiate by income_type
+          if (tx.income_type === 'freelance_part_time') {
+            freelance40_2 += tx.gross_amount || (tx.net_amount + wht);
+          } else if (tx.income_type === 'allowance') {
+            allowanceExempt += tx.net_amount;
+          } else if (tx.income_type === 'scholarship') {
+            scholarshipExempt += tx.net_amount;
+          } else if (tx.income_type === 'salary' || tx.is_salary) {
+            salary40_1 += tx.gross_amount || tx.amount;
+          } else {
+            // Check fallback keywords if not explicitly tagged
+            const desc = tx.description.toLowerCase();
+            if (desc.includes('แม่') || desc.includes('พ่อ') || desc.includes('ค่าขนม') || desc.includes('ครอบครัว')) {
+              allowanceExempt += tx.net_amount;
+            } else if (desc.includes('พาร์ทไทม์') || desc.includes('ฟรีแลนซ์') || desc.includes('สอนพิเศษ')) {
+              freelance40_2 += tx.gross_amount || (tx.net_amount + wht);
+            } else {
+              otherTaxable += tx.gross_amount || tx.amount;
+            }
+          }
+        }
+
+        // If no transactions logged yet, fallback to taxConfig.annual_salary
+        if (salary40_1 === 0 && freelance40_2 === 0 && otherTaxable === 0 && taxConfig.annual_salary > 0) {
+          salary40_1 = taxConfig.annual_salary;
+        }
+
+        return calculateTax(
+          {
+            salary40_1,
+            freelance40_2,
+            allowanceExempt,
+            scholarshipExempt,
+            otherTaxable,
+            withholdingTaxTotal,
+          },
+          taxConfig.additional_deductions,
+          taxConfig.tax_year
+        );
       },
 
       getThaiChuayThaiStatus: (dateStr?: string, pendingAmount: number = 0) => {

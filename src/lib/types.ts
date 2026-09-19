@@ -33,6 +33,14 @@ export interface TransactionMetadata {
   [key: string]: unknown;
 }
 
+export type IncomeType =
+  | 'salary'              // มาตรา 40(1) เงินเดือนประจำ
+  | 'freelance_part_time' // มาตรา 40(2) งานพาร์ทไทม์ / ฟรีแลนซ์ / รับจ้างทำของ
+  | 'allowance'           // ค่าขนม / เงินสนับสนุนจากครอบครัว (ได้รับการยกเว้นภาษี)
+  | 'scholarship'         // ทุนการศึกษา / เงินรางวัลการศึกษา (ได้รับการยกเว้นภาษี)
+  | 'investment'          // เงินปันผล / กำไรจากการลงทุน
+  | 'other';              // รายรับอื่นๆ
+
 export interface Transaction {
   id: string;
   user_id: string;
@@ -42,6 +50,10 @@ export interface Transaction {
   description: string;
   transaction_date: string; // YYYY-MM-DD
   is_salary: boolean;
+  income_type?: IncomeType;
+  gross_amount?: number; // ยอดรายรับก่อนหักภาษี ณ ที่จ่าย (ถ้ามี)
+  withholding_tax_rate?: number; // เช่น 3%
+  withholding_tax_amount?: number; // ยอดภาษีหัก ณ ที่จ่าย (บาท)
   is_thai_chuay_thai: boolean;
   thai_chuay_thai_discount: number;
   net_amount: number;
@@ -89,7 +101,11 @@ export interface TaxBracketCalculation {
 
 export interface TaxCalculationResult {
   taxYear: number;
-  grossIncome: number;
+  grossIncome: number; // รวมเงินได้ที่ต้องเสียภาษี (40(1) + 40(2))
+  taxableSalary40_1: number; // เงินเดือน 40(1)
+  taxableFreelance40_2: number; // พาร์ทไทม์/ฟรีแลนซ์ 40(2)
+  exemptIncome: number; // เงินได้ยกเว้นภาษี (ค่าขนมจากครอบครัว, ทุน)
+  totalIncomeAllSources: number; // รวมรายรับทุกประเภท
   standardDeductions: number;
   additionalDeductionsTotal: number;
   totalDeductions: number;
@@ -97,6 +113,23 @@ export interface TaxCalculationResult {
   totalTax: number;
   effectiveRate: number;
   brackets: TaxBracketCalculation[];
+  totalWithholdingTax: number; // รวมภาษีหัก ณ ที่จ่ายที่ถูกหักไปแล้ว (50 ทวิ)
+  netTaxPayable: number; // ภาษีที่ต้องชำระเพิ่ม (ถ้า totalTax > totalWithholdingTax)
+  taxRefund: number; // ยอดเงินคืนภาษีที่ขอคืนได้ (ถ้า totalWithholdingTax > totalTax)
+  isEligibleForRefund: boolean;
+}
+
+export interface CashflowRunway {
+  currentLiquidBalance: number;
+  monthlyEssentialExpenses: number;
+  runwayMonths: number;
+  runwayDays: number;
+  safeDailySpend: number;
+  isCriticalRunway: boolean;
+  essentialCategoriesSpending: {
+    categoryName: string;
+    amount: number;
+  }[];
 }
 
 export interface ThaiChuayThaiQuota {
@@ -110,3 +143,4 @@ export interface ThaiChuayThaiQuota {
   effectiveDiscount: number;
   effectiveNet: number;
 }
+

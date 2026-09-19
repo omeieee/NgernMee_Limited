@@ -40,20 +40,50 @@ export const TAX_DEDUCTION_LIMITS = {
   RETIREMENT_COMBINED_MAX: 500000, // RMF + SSF + Provident Fund <= 500,000
 };
 
+export interface IncomeBreakdownInput {
+  salary40_1?: number; // 40(1) เงินเดือนประจำ / ค่าจ้าง
+  freelance40_2?: number; // 40(2) พาร์ทไทม์ / ฟรีแลนซ์ / รับจ้างทำของ
+  allowanceExempt?: number; // เงินค่าขนม / ช่วยเหลือจากครอบครัว (ยกเว้นภาษี)
+  scholarshipExempt?: number; // ทุนการศึกษา (ยกเว้นภาษี)
+  otherTaxable?: number; // รายได้อื่นที่ต้องเสียภาษี
+  withholdingTaxTotal?: number; // รวมภาษีหัก ณ ที่จ่ายที่ถูกหักไว้ (50 ทวิ)
+}
+
 /**
- * Calculates Thai personal income tax given gross annual taxable salary and additional deductions
+ * Calculates Thai personal income tax given gross annual taxable income (or breakdown) and additional deductions
  */
 export function calculateTax(
-  grossIncome: number,
+  incomeInput: number | IncomeBreakdownInput,
   additional: AdditionalDeductions = {},
-  taxYear: number = new Date().getFullYear()
+  taxYear: number = new Date().getFullYear(),
+  explicitWithholdingTax: number = 0
 ): TaxCalculationResult {
-  const sanitizedGross = Math.max(0, grossIncome);
+  let salary40_1 = 0;
+  let freelance40_2 = 0;
+  let exemptIncome = 0;
+  let otherTaxable = 0;
+  let withholdingTax = explicitWithholdingTax;
+
+  if (typeof incomeInput === 'number') {
+    salary40_1 = Math.max(0, incomeInput);
+  } else {
+    salary40_1 = Math.max(0, incomeInput.salary40_1 || 0);
+    freelance40_2 = Math.max(0, incomeInput.freelance40_2 || 0);
+    exemptIncome = Math.max(0, (incomeInput.allowanceExempt || 0) + (incomeInput.scholarshipExempt || 0));
+    otherTaxable = Math.max(0, incomeInput.otherTaxable || 0);
+    withholdingTax = Math.max(0, incomeInput.withholdingTaxTotal ?? explicitWithholdingTax);
+  }
+
+  // Combined taxable employment & freelance income under 40(1) & 40(2)
+  const combined40_1_and_40_2 = salary40_1 + freelance40_2;
+  const sanitizedGross = combined40_1_and_40_2 + otherTaxable;
+  const totalIncomeAllSources = sanitizedGross + exemptIncome;
 
   // 1. Standard Deductions
+  // Section 40(1) + 40(2) share combined 50% max 100,000 THB expense deduction
   const personalAllowance = TAX_DEDUCTION_LIMITS.PERSONAL_ALLOWANCE;
   const expenseDeduction = Math.min(
-    sanitizedGross * TAX_DEDUCTION_LIMITS.EMPLOYMENT_EXPENSE_RATE,
+    combined40_1_and_40_2 * TAX_DEDUCTION_LIMITS.EMPLOYMENT_EXPENSE_RATE,
     TAX_DEDUCTION_LIMITS.EMPLOYMENT_EXPENSE_MAX
   );
   const socialSecurity = Math.min(
@@ -145,16 +175,31 @@ export function calculateTax(
   }
 
   const effectiveRate = sanitizedGross > 0 ? (totalTax / sanitizedGross) * 100 : 0;
+  const roundedTotalTax = Math.round(totalTax);
+  const roundedWht = Math.round(withholdingTax);
+
+  // If withholding tax paid exceeds final tax liability, user is eligible for a full refund!
+  const isRefund = roundedWht > roundedTotalTax;
+  const taxRefund = isRefund ? roundedWht - roundedTotalTax : 0;
+  const netTaxPayable = !isRefund ? roundedTotalTax - roundedWht : 0;
 
   return {
     taxYear,
     grossIncome: sanitizedGross,
+    taxableSalary40_1: salary40_1,
+    taxableFreelance40_2: freelance40_2,
+    exemptIncome,
+    totalIncomeAllSources,
     standardDeductions,
     additionalDeductionsTotal,
     totalDeductions,
     netTaxableIncome,
-    totalTax: Math.round(totalTax),
+    totalTax: roundedTotalTax,
     effectiveRate: Math.round(effectiveRate * 100) / 100,
     brackets,
+    totalWithholdingTax: roundedWht,
+    netTaxPayable,
+    taxRefund,
+    isEligibleForRefund: isRefund && taxRefund > 0,
   };
 }

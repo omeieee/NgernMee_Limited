@@ -28,6 +28,9 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Award,
+  Gift,
+  Coffee,
+  Briefcase,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -53,6 +56,8 @@ export const ReportsPage: React.FC = () => {
     trendData,
     categorySpending,
     frequentItems,
+    incomeAnalysis,
+    runway,
     taxCalculation,
     transactionCount,
     startDate,
@@ -236,6 +241,55 @@ export const ReportsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Income Streams & Multi-Source Breakdown */}
+          {incomeAnalysis.sources.length > 0 && (
+            <Card>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 gap-2">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-emerald-600" />
+                    <span>โครงสร้างที่มาของรายรับ (Income Streams Breakdown)</span>
+                  </CardTitle>
+                  <CardDescription>
+                    วิเคราะห์สัดส่วนรายได้จากเงินเดือน พาร์ทไทม์ และเงินสนับสนุนจากครอบครัว
+                  </CardDescription>
+                </div>
+                {incomeAnalysis.withholdingTaxTotal > 0 && (
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    ภาษีหัก ณ ที่จ่ายสะสม: {formatCurrency(incomeAnalysis.withholdingTaxTotal)}
+                  </span>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {incomeAnalysis.sources.map((source) => (
+                    <div
+                      key={source.type}
+                      className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 text-xs space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                          {source.type === 'allowance' && <Gift className="h-3.5 w-3.5 text-amber-500" />}
+                          {source.type === 'freelance_part_time' && <Coffee className="h-3.5 w-3.5 text-blue-500" />}
+                          {source.type === 'salary' && <Briefcase className="h-3.5 w-3.5 text-emerald-500" />}
+                          <span>{source.label}</span>
+                        </span>
+                        <span className="text-slate-400 font-medium">{source.percentage}%</span>
+                      </div>
+                      <div className="text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                        {formatCurrency(source.totalNet)}
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                        <span>{source.count} รายการ</span>
+                        <span>{source.isTaxable ? 'เสียภาษี (40(1)/40(2))' : 'ยกเว้นภาษี'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -433,7 +487,7 @@ export const ReportsPage: React.FC = () => {
                   <span>สรุปประมาณการภาษีเงินได้บุคคลธรรมดา (ปีภาษี {taxCalculation.taxYear})</span>
                 </CardTitle>
                 <CardDescription>
-                  คำนวณจากรายได้เงินเดือนพนักงานและค่าลดหย่อนที่บันทึกไว้ในระบบ
+                  สรุปคำนวณจากทุกแหล่งรายได้ (เงินเดือน, พาร์ทไทม์, ฟรีแลนซ์) และภาษีหัก ณ ที่จ่ายสะสม
                 </CardDescription>
               </div>
 
@@ -447,11 +501,18 @@ export const ReportsPage: React.FC = () => {
 
             <CardContent className="space-y-6 pt-4">
               {/* Top stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800">
-                  <span className="text-[11px] text-slate-400 block font-medium">เงินได้ทั้งปี</span>
+                  <span className="text-[11px] text-slate-400 block font-medium">เงินได้พึงประเมิน</span>
                   <span className="text-lg font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                     {formatCurrency(taxCalculation.grossIncome)}
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800">
+                  <span className="text-[11px] text-slate-400 block font-medium">เงินได้ยกเว้น (ค่าขนม)</span>
+                  <span className="text-lg font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                    {formatCurrency(taxCalculation.exemptIncome)}
                   </span>
                 </div>
 
@@ -463,21 +524,23 @@ export const ReportsPage: React.FC = () => {
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800">
-                  <span className="text-[11px] text-slate-400 block font-medium">เงินได้สุทธิ</span>
-                  <span className="text-lg font-bold text-slate-900 dark:text-slate-100 tabular-nums">
-                    {formatCurrency(taxCalculation.netTaxableIncome)}
+                  <span className="text-[11px] text-slate-400 block font-medium">ภาษีหัก ณ ที่จ่าย (50 ทวิ)</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                    {formatCurrency(taxCalculation.totalWithholdingTax)}
                   </span>
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800">
                   <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block font-medium">
-                    ภาษีที่ต้องชำระ
+                    {taxCalculation.isEligibleForRefund ? 'สิทธิขอคืนเงินภาษี' : 'ภาษีชำระสุทธิ'}
                   </span>
                   <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
-                    {formatCurrency(taxCalculation.totalTax)}
+                    {taxCalculation.isEligibleForRefund
+                      ? `+${formatCurrency(taxCalculation.taxRefund)}`
+                      : formatCurrency(taxCalculation.netTaxPayable)}
                   </span>
                   <span className="text-[10px] text-emerald-600 block mt-0.5">
-                    (อัตราแท้จริง {taxCalculation.effectiveRate}%)
+                    {taxCalculation.isEligibleForRefund ? '(ยื่น ภ.ง.ด.90 ขอคืน 100%)' : `(Effective ${taxCalculation.effectiveRate}%)`}
                   </span>
                 </div>
               </div>
