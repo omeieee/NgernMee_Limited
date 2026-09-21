@@ -4,6 +4,7 @@ import {
   calculateDraftAmounts,
   suggestTransactionMeta,
   validateTransactionDraft,
+  extractDescriptionSuggestions,
 } from '../index';
 
 describe('Transaction Draft Deep Module', () => {
@@ -23,18 +24,45 @@ describe('Transaction Draft Deep Module', () => {
       }
     });
 
-    it('rejects zero or negative amount and empty description', () => {
+    it('accepts empty or whitespace description and defaults it to อื่นๆ', () => {
+      const draft = {
+        type: 'expense',
+        amount: 150,
+        description: '   ',
+        transaction_date: '2026-06-20',
+      };
+      const res = validateTransactionDraft(draft);
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.data.description).toBe('อื่นๆ');
+      }
+    });
+
+    it('accepts omitted description and defaults it to อื่นๆ', () => {
+      const draft = {
+        type: 'expense',
+        amount: 80,
+        transaction_date: '2026-06-20',
+      };
+      const res = validateTransactionDraft(draft);
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.data.description).toBe('อื่นๆ');
+      }
+    });
+
+    it('rejects zero or negative amount', () => {
       const invalid = {
         type: 'expense',
         amount: 0,
-        description: '   ',
+        description: 'ค่ากาแฟ',
         transaction_date: '2026-06-20',
       };
       const res = validateTransactionDraft(invalid);
       expect(res.success).toBe(false);
       if (!res.success) {
         expect(res.errors.amount).toBeDefined();
-        expect(res.errors.description).toBeDefined();
+        expect(res.errors.description).toBeUndefined();
       }
     });
   });
@@ -107,6 +135,18 @@ describe('Transaction Draft Deep Module', () => {
       expect(payload.is_salary).toBe(false);
       expect(payload.income_type).toBe('freelance_part_time');
     });
+
+    it('defaults empty or whitespace description to อื่นๆ in payload', () => {
+      const payload = buildTransactionPayload({
+        type: 'expense',
+        amount: 200,
+        description: '   ',
+        category_id: null,
+        transaction_date: '2026-06-25',
+      });
+
+      expect(payload.description).toBe('อื่นๆ');
+    });
   });
 
   describe('suggestTransactionMeta', () => {
@@ -126,6 +166,69 @@ describe('Transaction Draft Deep Module', () => {
     it('suggests Thai Chuay Thai for market / co-pay keywords on expenses', () => {
       const suggestion = suggestTransactionMeta('ซื้อของตลาดคนละครึ่ง', 'expense');
       expect(suggestion.suggestedThaiChuayThai).toBe(true);
+    });
+  });
+
+  describe('extractDescriptionSuggestions', () => {
+    const mockTxHistory = [
+      {
+        type: 'expense' as const,
+        description: 'กาแฟอเมซอน',
+        category_id: 'cat-drink',
+        transaction_date: '2026-06-20',
+      },
+      {
+        type: 'expense' as const,
+        description: 'ข้าวมันไก่',
+        category_id: 'cat-food',
+        transaction_date: '2026-06-19',
+      },
+      {
+        type: 'expense' as const,
+        description: 'กาแฟอเมซอน',
+        category_id: 'cat-drink',
+        transaction_date: '2026-06-21',
+      },
+      {
+        type: 'expense' as const,
+        description: 'อื่นๆ',
+        category_id: null,
+        transaction_date: '2026-06-22',
+      },
+      {
+        type: 'income' as const,
+        description: 'เงินเดือน บ.ไทยจำกัด',
+        category_id: 'cat-salary',
+        transaction_date: '2026-06-25',
+      },
+    ];
+
+    it('extracts unique descriptions and associates with the correct category', () => {
+      const suggestions = extractDescriptionSuggestions(mockTxHistory, { type: 'expense' });
+      expect(suggestions.length).toBe(2); // กาแฟอเมซอน, ข้าวมันไก่ (ignores "อื่นๆ")
+
+      const coffee = suggestions.find((s) => s.description === 'กาแฟอเมซอน');
+      expect(coffee).toBeDefined();
+      expect(coffee?.categoryId).toBe('cat-drink');
+      expect(coffee?.count).toBe(2);
+      expect(coffee?.lastUsed).toBe('2026-06-21');
+    });
+
+    it('filters suggestions by query substring and prioritizes prefix matches', () => {
+      const suggestions = extractDescriptionSuggestions(mockTxHistory, {
+        type: 'expense',
+        query: 'กาแฟ',
+      });
+      expect(suggestions.length).toBe(1);
+      expect(suggestions[0].description).toBe('กาแฟอเมซอน');
+      expect(suggestions[0].categoryId).toBe('cat-drink');
+    });
+
+    it('isolates income suggestions from expense suggestions', () => {
+      const incomeSuggestions = extractDescriptionSuggestions(mockTxHistory, { type: 'income' });
+      expect(incomeSuggestions.length).toBe(1);
+      expect(incomeSuggestions[0].description).toBe('เงินเดือน บ.ไทยจำกัด');
+      expect(incomeSuggestions[0].categoryId).toBe('cat-salary');
     });
   });
 });

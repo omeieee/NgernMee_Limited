@@ -5,28 +5,62 @@ import { useMemo } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import type { Category, TransactionType } from '../lib/types';
 
+export interface OrderedCategoryItem extends Category {
+  depth: number;
+  pathString: string;
+  hasChildren: boolean;
+}
+
+/**
+ * Recursively builds a tree from flat categories array
+ */
+export function buildCategoryTree(flat: Category[], parentId: string | null = null): Category[] {
+  return flat
+    .filter((c) => c.parent_id === parentId)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((cat) => ({
+      ...cat,
+      children: buildCategoryTree(flat, cat.id),
+    }));
+}
+
+/**
+ * Flattens hierarchical category tree depth-first in exact sort_order
+ */
+export function flattenCategoryTree(
+  tree: Category[],
+  getCategoryPathString: (id: string) => string,
+  depth = 0
+): OrderedCategoryItem[] {
+  const result: OrderedCategoryItem[] = [];
+  for (const node of tree) {
+    const hasChildren = Boolean(node.children && node.children.length > 0);
+    result.push({
+      ...node,
+      depth,
+      pathString: getCategoryPathString(node.id),
+      hasChildren,
+    });
+    if (node.children && node.children.length > 0) {
+      result.push(...flattenCategoryTree(node.children, getCategoryPathString, depth + 1));
+    }
+  }
+  return result;
+}
+
 export function useCategories() {
   const { categories, addCategory, updateCategory, deleteCategory, transactions } = useAppStore();
 
-  /**
-   * Recursively builds a tree from flat categories array
-   */
   const buildTree = (flat: Category[], parentId: string | null = null): Category[] => {
-    return flat
-      .filter((c) => c.parent_id === parentId)
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((cat) => ({
-        ...cat,
-        children: buildTree(flat, cat.id),
-      }));
+    return buildCategoryTree(flat, parentId);
   };
 
   const expenseTree = useMemo(() => {
-    return buildTree(categories.filter((c) => c.type === 'expense'));
+    return buildCategoryTree(categories.filter((c) => c.type === 'expense'));
   }, [categories]);
 
   const incomeTree = useMemo(() => {
-    return buildTree(categories.filter((c) => c.type === 'income'));
+    return buildCategoryTree(categories.filter((c) => c.type === 'income'));
   }, [categories]);
 
   const categoriesMap = useMemo(() => {
@@ -88,11 +122,26 @@ export function useCategories() {
     });
   };
 
+  const orderedExpenseCategories = useMemo(() => {
+    return flattenCategoryTree(expenseTree, getCategoryPathString);
+  }, [expenseTree, categoriesMap]);
+
+  const orderedIncomeCategories = useMemo(() => {
+    return flattenCategoryTree(incomeTree, getCategoryPathString);
+  }, [incomeTree, categoriesMap]);
+
+  const getOrderedCategories = (catType: TransactionType = 'expense'): OrderedCategoryItem[] => {
+    return catType === 'expense' ? orderedExpenseCategories : orderedIncomeCategories;
+  };
+
   return {
     categories,
     categoriesMap,
     expenseTree,
     incomeTree,
+    orderedExpenseCategories,
+    orderedIncomeCategories,
+    getOrderedCategories,
     buildTree,
     getCategoryPath,
     getCategoryPathString,

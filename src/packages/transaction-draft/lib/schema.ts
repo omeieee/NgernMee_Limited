@@ -9,7 +9,14 @@ export const transactionDraftSchema = z.object({
     },
     { message: 'กรุณาระบุจำนวนเงินที่มากกว่า 0' }
   ),
-  description: z.string().trim().min(1, { message: 'กรุณาระบุรายละเอียดรายการ' }),
+  description: z
+    .union([z.string(), z.null(), z.undefined()])
+    .optional()
+    .transform((val) => {
+      if (typeof val !== 'string') return 'อื่นๆ';
+      const trimmed = val.trim();
+      return trimmed.length > 0 ? trimmed : 'อื่นๆ';
+    }),
   category_id: z.string().nullable().optional(),
   transaction_date: z.string().min(1, { message: 'กรุณาระบุวันที่' }),
   is_thai_chuay_thai: z.boolean().optional().default(false),

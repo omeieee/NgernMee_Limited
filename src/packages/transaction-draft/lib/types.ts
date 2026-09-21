@@ -5,8 +5,8 @@ export type TransactionPayload = Omit<Transaction, 'id' | 'created_at' | 'update
 export interface TransactionDraftInput {
   type: TransactionType;
   amount: number | string;
-  description: string;
-  category_id: string | null;
+  description?: string | null;
+  category_id?: string | null;
   transaction_date: string;
   is_thai_chuay_thai?: boolean;
   income_type?: IncomeType;
@@ -21,4 +21,11 @@ export interface DraftAmountsCalculation {
   discount: number;
   whtAmount: number;
   whtRate: number;
+}
+
+export interface DescriptionSuggestion {
+  description: string;
+  categoryId: string | null;
+  count: number;
+  lastUsed: string;
 }

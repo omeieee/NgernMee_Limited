@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Coins,
   ArrowDownCircle,
@@ -15,8 +15,10 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { CategoryIcon } from '../ui/CategoryIcon';
 import { CategoryPicker } from '../categories/CategoryPicker';
+import { useAppStore } from '../../stores/useAppStore';
+import { useCategories } from '../../hooks/useCategories';
 import { useThaiChuayThai } from '../../hooks/useThaiChuayThai';
 import { formatCurrency, cn } from '../../lib/utils';
 import type { Transaction, TransactionType, IncomeType } from '../../lib/types';
@@ -25,6 +27,8 @@ import {
   buildTransactionPayload,
   validateTransactionDraft,
   suggestTransactionMeta,
+  extractDescriptionSuggestions,
+  type DescriptionSuggestion,
 } from '../../packages/transaction-draft';
 
 interface TransactionFormProps {
@@ -69,6 +73,69 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   // Hook for Thai Chuay Thai calculations and limits
   const { quota, calculateForExpense } = useThaiChuayThai(transactionDate);
+
+  // Store and category context for history suggestions
+  const { transactions } = useAppStore();
+  const { categoriesMap } = useCategories();
+
+  const [isSuggestOpen, setIsSuggestOpen] = useState(false);
+  const descContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close suggestion popover on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (descContainerRef.current && !descContainerRef.current.contains(e.target as Node)) {
+        setIsSuggestOpen(false);
+      }
+    };
+    if (isSuggestOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isSuggestOpen]);
+
+  // Derived description suggestions matching input
+  const suggestions = useMemo(() => {
+    return extractDescriptionSuggestions(transactions, {
+      type,
+      query: description,
+      limit: 6,
+    });
+  }, [transactions, type, description]);
+
+  // Top recent suggestions for instant 1-tap chips
+  const topRecentSuggestions = useMemo(() => {
+    return extractDescriptionSuggestions(transactions, {
+      type,
+      query: '',
+      limit: 4,
+    });
+  }, [transactions, type]);
+
+  const handleSelectSuggestion = (s: DescriptionSuggestion) => {
+    setDescription(s.description);
+    if (s.categoryId) {
+      setCategoryId(s.categoryId);
+    }
+    setErrors((prev) => ({ ...prev, description: undefined }));
+    setIsSuggestOpen(false);
+
+    if (!initialData?.id) {
+      const meta = suggestTransactionMeta(s.description, type);
+      if (meta.suggestedType && meta.suggestedType !== type) {
+        setType(meta.suggestedType);
+      }
+      if (meta.suggestedIncomeType) {
+        setIncomeType(meta.suggestedIncomeType);
+      }
+      if (meta.suggestedHasWht !== undefined) {
+        setHasWht(meta.suggestedHasWht);
+      }
+      if (meta.suggestedThaiChuayThai !== undefined) {
+        setIsThaiChuayThai(meta.suggestedThaiChuayThai);
+      }
+    }
+  };
 
   // Sync initial data if changed
   useEffect(() => {
@@ -169,7 +236,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         {
           type,
           amount: numAmount,
-          description,
+          description: validation.data.description,
           category_id: categoryId,
           transaction_date: transactionDate,
           is_thai_chuay_thai: isThaiChuayThai,
@@ -297,14 +364,127 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         {errors.amount && <p className="text-xs text-rose-500 mt-1">{errors.amount}</p>}
       </div>
 
-      {/* Description */}
-      <Input
-        label="รายละเอียดรายการ"
-        placeholder="เช่น ค่าข้าวมันไก่, เงินเดือน, กาแฟ"
-        value={description}
-        error={errors.description}
-        onChange={handleDescriptionChange}
-      />
+      {/* Description with autocomplete & category memory */}
+      <div className="relative w-full" ref={descContainerRef}>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+            รายละเอียดรายการ{' '}
+            <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
+              (ไม่บังคับ - เริ่มต้น "อื่นๆ")
+            </span>
+          </label>
+        </div>
+
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="เช่น ค่าข้าวมันไก่, เงินเดือน, กาแฟ (ถ้าไม่ระบุจะเป็น อื่นๆ)"
+            value={description}
+            onFocus={() => setIsSuggestOpen(true)}
+            onChange={handleDescriptionChange}
+            onBlur={() => {
+              if (!categoryId && description.trim()) {
+                const exact = suggestions.find(
+                  (s) => s.description.toLowerCase() === description.trim().toLowerCase()
+                );
+                if (exact?.categoryId) {
+                  setCategoryId(exact.categoryId);
+                }
+              }
+            }}
+            className={cn(
+              'flex h-11 sm:h-10 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-base sm:text-sm shadow-2xs placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-600 dark:border-slate-800 dark:bg-slate-900 dark:placeholder:text-slate-500 dark:text-slate-100 transition-all touch-manipulation',
+              errors.description && 'border-rose-500'
+            )}
+          />
+        </div>
+        {errors.description && <p className="text-xs text-rose-500 mt-1">{errors.description}</p>}
+
+        {/* Suggestion Dropdown Popover */}
+        {isSuggestOpen && suggestions.length > 0 && (
+          <div className="absolute left-0 right-0 top-full z-40 mt-1 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in-50 zoom-in-95 duration-150">
+            <div className="px-2.5 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800/80 pb-1 mb-1">
+              <Sparkles className="h-3 w-3 text-amber-500" />
+              <span>รายการที่เคยบันทึกไว้ (คลิกเพื่อเลือกพร้อมหมวดหมู่):</span>
+            </div>
+            <div className="space-y-0.5">
+              {suggestions.map((s, idx) => {
+                const cat = s.categoryId ? categoriesMap.get(s.categoryId) : null;
+                return (
+                  <button
+                    key={`${s.description}-${idx}`}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelectSuggestion(s);
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 text-left touch-manipulation cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                        {s.description}
+                      </span>
+                      {s.count > 1 && (
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded-full shrink-0">
+                          {s.count} ครั้ง
+                        </span>
+                      )}
+                    </div>
+
+                    {cat ? (
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div
+                          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-xs text-white shadow-2xs"
+                          style={{ backgroundColor: cat.color || '#10b981' }}
+                        >
+                          <CategoryIcon name={cat.icon} className="h-2.5 w-2.5" />
+                        </div>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[120px]">
+                          {cat.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">อื่นๆ</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Quick Suggestion Chips below input for instant 1-tap when input is not focused or empty */}
+        {topRecentSuggestions.length > 0 && !isSuggestOpen && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+              <Sparkles className="h-3 w-3 text-amber-500" />
+              <span>ใช้บ่อย:</span>
+            </span>
+            {topRecentSuggestions.map((s, idx) => {
+              const cat = s.categoryId ? categoriesMap.get(s.categoryId) : null;
+              return (
+                <button
+                  key={`chip-${idx}`}
+                  type="button"
+                  onClick={() => handleSelectSuggestion(s)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800/80 dark:hover:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-300 transition-colors touch-manipulation active:scale-95"
+                  title={`เลือก "${s.description}" ${cat ? `(หมวด: ${cat.name})` : ''}`}
+                >
+                  {cat && (
+                    <div
+                      className="flex h-3.5 w-3.5 items-center justify-center rounded-xs text-white"
+                      style={{ backgroundColor: cat.color || '#10b981' }}
+                    >
+                      <CategoryIcon name={cat.icon} className="h-2 w-2" />
+                    </div>
+                  )}
+                  <span>{s.description}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Category Picker */}
       <CategoryPicker value={categoryId} onChange={(id) => setCategoryId(id)} type={type} />

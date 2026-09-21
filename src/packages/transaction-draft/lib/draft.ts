@@ -1,5 +1,10 @@
 import type { IncomeType, TransactionType } from '../../../lib/types';
-import type { DraftAmountsCalculation, TransactionDraftInput, TransactionPayload } from './types';
+import type {
+  DraftAmountsCalculation,
+  TransactionDraftInput,
+  TransactionPayload,
+  DescriptionSuggestion,
+} from './types';
 
 export interface DraftCalculationOptions {
   type: TransactionType;
@@ -93,12 +98,15 @@ export function buildTransactionPayload(
     customWhtAmount: customWht,
   });
 
+  const rawDesc = typeof draft.description === 'string' ? draft.description.trim() : '';
+  const finalDescription = rawDesc.length > 0 ? rawDesc : 'อื่นๆ';
+
   return {
     type: draft.type,
     amount: numAmount,
     gross_amount: amounts.gross,
     net_amount: amounts.net,
-    description: draft.description.trim(),
+    description: finalDescription,
     category_id: draft.category_id || null,
     transaction_date: draft.transaction_date,
     is_salary: draft.type === 'income' ? draft.income_type === 'salary' : false,
@@ -173,4 +181,113 @@ export function suggestTransactionMeta(
   }
 
   return {};
+}
+
+export interface DescriptionSuggestionOptions {
+  type?: TransactionType;
+  query?: string;
+  limit?: number;
+}
+
+/**
+ * Extracts and ranks historical description suggestions with their associated category
+ */
+export function extractDescriptionSuggestions(
+  transactions: {
+    type: TransactionType;
+    description: string;
+    category_id?: string | null;
+    transaction_date?: string;
+    created_at?: string;
+  }[],
+  options?: DescriptionSuggestionOptions
+): DescriptionSuggestion[] {
+  const { type, query = '', limit = 8 } = options || {};
+  const cleanQuery = query.trim().toLowerCase();
+
+  const map = new Map<
+    string,
+    {
+      description: string;
+      categoryCounts: Map<string, number>;
+      nullCategoryCount: number;
+      lastCategory: string | null;
+      lastUsed: string;
+      totalCount: number;
+    }
+  >();
+
+  for (const tx of transactions) {
+    if (type && tx.type !== type) continue;
+    const desc = (tx.description || '').trim();
+    if (!desc || desc === 'อื่นๆ') continue;
+
+    const lowerDesc = desc.toLowerCase();
+    const dateStr = tx.transaction_date || tx.created_at || '';
+
+    let entry = map.get(lowerDesc);
+    if (!entry) {
+      entry = {
+        description: desc,
+        categoryCounts: new Map(),
+        nullCategoryCount: 0,
+        lastCategory: tx.category_id || null,
+        lastUsed: dateStr,
+        totalCount: 0,
+      };
+      map.set(lowerDesc, entry);
+    }
+
+    entry.totalCount += 1;
+    if (dateStr && (!entry.lastUsed || dateStr >= entry.lastUsed)) {
+      entry.lastUsed = dateStr;
+      entry.lastCategory = tx.category_id || null;
+    }
+
+    if (tx.category_id) {
+      entry.categoryCounts.set(tx.category_id, (entry.categoryCounts.get(tx.category_id) || 0) + 1);
+    } else {
+      entry.nullCategoryCount += 1;
+    }
+  }
+
+  const results: DescriptionSuggestion[] = [];
+
+  for (const entry of map.values()) {
+    const lower = entry.description.toLowerCase();
+    if (cleanQuery && !lower.includes(cleanQuery)) {
+      continue;
+    }
+
+    let bestCatId: string | null = entry.lastCategory;
+    let maxCount = 0;
+    for (const [catId, cCount] of entry.categoryCounts.entries()) {
+      if (cCount > maxCount) {
+        maxCount = cCount;
+        bestCatId = catId;
+      }
+    }
+
+    results.push({
+      description: entry.description,
+      categoryId: bestCatId,
+      count: entry.totalCount,
+      lastUsed: entry.lastUsed,
+    });
+  }
+
+  results.sort((a, b) => {
+    if (cleanQuery) {
+      const aStarts = a.description.toLowerCase().startsWith(cleanQuery);
+      const bStarts = b.description.toLowerCase().startsWith(cleanQuery);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+    }
+    if (b.lastUsed !== a.lastUsed) {
+      return b.lastUsed.localeCompare(a.lastUsed);
+    }
+    return b.count - a.count;
+  });
+
+  return results.slice(0, limit);
 }
