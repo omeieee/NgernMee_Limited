@@ -28,3 +28,8 @@ dist-ssr
 # Environment variables
 .env
 .env.production
+
+# Agent skills & tooling
+.agents/
+.aider-desk/
+skills-lock.json

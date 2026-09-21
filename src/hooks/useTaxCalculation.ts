@@ -3,81 +3,22 @@
 
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../stores/useAppStore';
-import { calculateTax, TAX_DEDUCTION_LIMITS } from '../lib/thaiTax';
+import { calculateTax, classifyAnnualIncome, TAX_DEDUCTION_LIMITS } from '../packages/tax-engine';
 import type { AdditionalDeductions, TaxConfig } from '../lib/types';
 
 export function useTaxCalculation() {
   const { taxConfig, updateTaxConfig, transactions } = useAppStore();
   const [useAutoSalary, setUseAutoSalary] = useState(true);
 
-  // Compute multi-stream income for the tax year
+  // Compute multi-stream income for the tax year via tax-engine deep module
   const incomeStats = useMemo(() => {
-    const yearStr = String(taxConfig.tax_year);
-    const yearTxs = transactions.filter(
-      (tx) => tx.type === 'income' && tx.transaction_date.startsWith(yearStr)
-    );
-
-    let salary40_1 = 0;
-    let freelance40_2 = 0;
-    let allowanceExempt = 0;
-    let scholarshipExempt = 0;
-    let otherTaxable = 0;
-    let withholdingTaxTotal = 0;
-
-    for (const tx of yearTxs) {
-      const wht = tx.withholding_tax_amount || 0;
-      withholdingTaxTotal += wht;
-
-      if (tx.income_type === 'freelance_part_time') {
-        freelance40_2 += tx.gross_amount || (tx.net_amount + wht);
-      } else if (tx.income_type === 'allowance') {
-        allowanceExempt += tx.net_amount;
-      } else if (tx.income_type === 'scholarship') {
-        scholarshipExempt += tx.net_amount;
-      } else if (tx.income_type === 'salary' || tx.is_salary) {
-        salary40_1 += tx.gross_amount || tx.amount;
-      } else {
-        const desc = tx.description.toLowerCase();
-        if (desc.includes('แม่') || desc.includes('พ่อ') || desc.includes('ค่าขนม') || desc.includes('ครอบครัว')) {
-          allowanceExempt += tx.net_amount;
-        } else if (desc.includes('พาร์ทไทม์') || desc.includes('ฟรีแลนซ์') || desc.includes('สอนพิเศษ')) {
-          freelance40_2 += tx.gross_amount || (tx.net_amount + wht);
-        } else {
-          otherTaxable += tx.gross_amount || tx.amount;
-        }
-      }
-    }
-
-    const hasAnyIncomeTxs = yearTxs.length > 0;
-    const totalTaxable = salary40_1 + freelance40_2 + otherTaxable;
-
-    return {
-      salary40_1,
-      freelance40_2,
-      allowanceExempt,
-      scholarshipExempt,
-      otherTaxable,
-      withholdingTaxTotal,
-      hasAnyIncomeTxs,
-      totalTaxable,
-    };
+    return classifyAnnualIncome(transactions, taxConfig.tax_year);
   }, [transactions, taxConfig.tax_year]);
 
   // Actual annual income inputs used for calculation
   const calculation = useMemo(() => {
     if (useAutoSalary && incomeStats.hasAnyIncomeTxs) {
-      return calculateTax(
-        {
-          salary40_1: incomeStats.salary40_1,
-          freelance40_2: incomeStats.freelance40_2,
-          allowanceExempt: incomeStats.allowanceExempt,
-          scholarshipExempt: incomeStats.scholarshipExempt,
-          otherTaxable: incomeStats.otherTaxable,
-          withholdingTaxTotal: incomeStats.withholdingTaxTotal,
-        },
-        taxConfig.additional_deductions,
-        taxConfig.tax_year
-      );
+      return calculateTax(incomeStats, taxConfig.additional_deductions, taxConfig.tax_year);
     }
 
     // Manual or fixed fallback
@@ -89,7 +30,13 @@ export function useTaxCalculation() {
       taxConfig.additional_deductions,
       taxConfig.tax_year
     );
-  }, [useAutoSalary, incomeStats, taxConfig.annual_salary, taxConfig.additional_deductions, taxConfig.tax_year]);
+  }, [
+    useAutoSalary,
+    incomeStats,
+    taxConfig.annual_salary,
+    taxConfig.additional_deductions,
+    taxConfig.tax_year,
+  ]);
 
   const grossIncome = calculation.grossIncome;
   const transactionSalaryTotal = incomeStats.salary40_1;
@@ -123,7 +70,10 @@ export function useTaxCalculation() {
     }
 
     const currentThaiEsg = taxConfig.additional_deductions.thai_esg || 0;
-    const maxThaiEsg = Math.min(TAX_DEDUCTION_LIMITS.THAI_ESG_MAX, grossIncome * TAX_DEDUCTION_LIMITS.THAI_ESG_PERCENT);
+    const maxThaiEsg = Math.min(
+      TAX_DEDUCTION_LIMITS.THAI_ESG_MAX,
+      grossIncome * TAX_DEDUCTION_LIMITS.THAI_ESG_PERCENT
+    );
     const esgRemaining = Math.max(0, maxThaiEsg - currentThaiEsg);
 
     if (esgRemaining > 0 && calculation.totalTax > 0) {
@@ -135,7 +85,10 @@ export function useTaxCalculation() {
     }
 
     const currentRmf = taxConfig.additional_deductions.rmf || 0;
-    const maxRmf = Math.min(TAX_DEDUCTION_LIMITS.RMF_MAX, grossIncome * TAX_DEDUCTION_LIMITS.RMF_PERCENT);
+    const maxRmf = Math.min(
+      TAX_DEDUCTION_LIMITS.RMF_MAX,
+      grossIncome * TAX_DEDUCTION_LIMITS.RMF_PERCENT
+    );
     const rmfRemaining = Math.max(0, maxRmf - currentRmf);
 
     if (rmfRemaining > 0 && calculation.totalTax > 0) {

@@ -28,15 +28,9 @@ import { TransactionForm } from '../components/transactions/TransactionForm';
 import { useAppStore } from '../stores/useAppStore';
 import { useCategories } from '../hooks/useCategories';
 import { useThaiChuayThai } from '../hooks/useThaiChuayThai';
-import { calculateCashflowRunway } from '../lib/cashflowIntelligence';
+import { calculateDashboardStats } from '../packages/financial-intelligence';
 import { formatCurrency, formatThaiDate, cn } from '../lib/utils';
-import {
-  AreaChart,
-  Area,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-} from 'recharts';
+import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import type { Transaction } from '../lib/types';
 
 export const DashboardPage: React.FC = () => {
@@ -45,73 +39,23 @@ export const DashboardPage: React.FC = () => {
   const { quota } = useThaiChuayThai();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
 
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const thisMonthStr = todayStr.slice(0, 7);
+  // Consolidated financial intelligence (computed in a single pass)
+  const {
+    todayIncome,
+    todayExpense,
+    monthIncome,
+    monthExpense,
+    monthSavings,
+    monthThaiChuayThaiSavings,
+    past7DaysTrend: past7DaysData,
+    recentTransactions,
+    runway,
+  } = useMemo(
+    () => calculateDashboardStats(transactions, categoriesMap),
+    [transactions, categoriesMap]
+  );
 
-  // Today stats (memoized)
-  const { todayIncome, todayExpense } = useMemo(() => {
-    const todayTransactions = transactions.filter((t) => t.transaction_date === todayStr);
-    const inc = todayTransactions
-      .filter((t) => t.type === 'income')
-      .reduce((sum, t) => sum + t.net_amount, 0);
-    const exp = todayTransactions
-      .filter((t) => t.type === 'expense')
-      .reduce((sum, t) => sum + t.net_amount, 0);
-    return { todayIncome: inc, todayExpense: exp };
-  }, [transactions, todayStr]);
-
-  // Month stats (memoized)
-  const { monthIncome, monthExpense, monthSavings, monthThaiChuayThaiSavings } = useMemo(() => {
-    const monthTransactions = transactions.filter((t) => t.transaction_date.startsWith(thisMonthStr));
-    const inc = monthTransactions
-      .filter((t) => t.type === 'income')
-      .reduce((sum, t) => sum + t.net_amount, 0);
-    const exp = monthTransactions
-      .filter((t) => t.type === 'expense')
-      .reduce((sum, t) => sum + t.net_amount, 0);
-    const savings = inc - exp;
-    const chuayThai = monthTransactions
-      .filter((t) => t.is_thai_chuay_thai)
-      .reduce((sum, t) => sum + (t.thai_chuay_thai_discount || 0), 0);
-    return {
-      monthIncome: inc,
-      monthExpense: exp,
-      monthSavings: savings,
-      monthThaiChuayThaiSavings: chuayThai,
-    };
-  }, [transactions, thisMonthStr]);
-
-  // Recent 5 transactions (memoized)
-  const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
-
-  // 7-day sparkline data (memoized)
-  const past7DaysData = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      const dStr = d.toISOString().slice(0, 10);
-      const dayTxs = transactions.filter((t) => t.transaction_date === dStr);
-      const expense = dayTxs
-        .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.net_amount, 0);
-      const income = dayTxs
-        .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + t.net_amount, 0);
-
-      return {
-        date: dStr,
-        dayName: d.toLocaleDateString('th-TH', { weekday: 'short' }),
-        expense,
-        income,
-      };
-    });
-  }, [transactions]);
-
-  // Cashflow runway calculation for irregular earners & students
-  const runway = useMemo(() => {
-    return calculateCashflowRunway(transactions, categoriesMap, now);
-  }, [transactions, categoriesMap, now]);
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const handleQuickAddSubmit = async (
     data: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>
@@ -126,7 +70,10 @@ export const DashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            สวัสดี, {profile?.display_name || (isDemoMode ? 'คุณสมชาย' : (user?.email?.split('@')[0] || 'ผู้ใช้งาน'))} 👋
+            สวัสดี,{' '}
+            {profile?.display_name ||
+              (isDemoMode ? 'คุณสมชาย' : user?.email?.split('@')[0] || 'ผู้ใช้งาน')}{' '}
+            👋
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5" />
@@ -193,14 +140,22 @@ export const DashboardPage: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0 pt-1.5 sm:pt-2">
-            <div className={cn(
-              'text-base sm:text-2xl font-bold tracking-tight tabular-nums',
-              monthSavings >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-            )}>
-              {monthSavings >= 0 ? `+${formatCurrency(monthSavings)}` : formatCurrency(monthSavings)}
+            <div
+              className={cn(
+                'text-base sm:text-2xl font-bold tracking-tight tabular-nums',
+                monthSavings >= 0
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-rose-600 dark:text-rose-400'
+              )}
+            >
+              {monthSavings >= 0
+                ? `+${formatCurrency(monthSavings)}`
+                : formatCurrency(monthSavings)}
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 truncate">
-              {monthIncome > 0 ? `อัตราออม ${Math.round((monthSavings / monthIncome) * 100)}%` : 'ยังไม่มีรายรับ'}
+              {monthIncome > 0
+                ? `อัตราออม ${Math.round((monthSavings / monthIncome) * 100)}%`
+                : 'ยังไม่มีรายรับ'}
             </p>
           </CardContent>
         </Card>
@@ -238,19 +193,22 @@ export const DashboardPage: React.FC = () => {
                 <span>ระยะเวลาปลอดภัยทางการเงิน (Cashflow Runway)</span>
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                ประเมินว่าเงินเก็บปัจจุบันจะสามารถประคองค่าใช้จ่ายจำเป็นได้นานเท่าใด หากไม่มีรายรับใหม่
+                ประเมินว่าเงินเก็บปัจจุบันจะสามารถประคองค่าใช้จ่ายจำเป็นได้นานเท่าใด
+                หากไม่มีรายรับใหม่
               </p>
             </div>
           </div>
 
-          <span className={cn(
-            'inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border self-start sm:self-auto',
-            runway.runwayMonths >= 3
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60'
-              : runway.runwayMonths >= 1
-              ? 'bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60'
-              : 'bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60'
-          )}>
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border self-start sm:self-auto',
+              runway.runwayMonths >= 3
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60'
+                : runway.runwayMonths >= 1
+                  ? 'bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60'
+                  : 'bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60'
+            )}
+          >
             {runway.runwayMonths >= 3 ? (
               <>
                 <ShieldCheck className="h-3.5 w-3.5" />
@@ -274,15 +232,21 @@ export const DashboardPage: React.FC = () => {
           <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
             <span className="text-slate-400 block text-[11px]">เงินสำรองปัจจุบันอยู่ได้อีก:</span>
             <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
-              ~{runway.runwayMonths} เดือน <span className="text-xs font-normal text-slate-500">({runway.runwayDays} วัน)</span>
+              ~{runway.runwayMonths} เดือน{' '}
+              <span className="text-xs font-normal text-slate-500">({runway.runwayDays} วัน)</span>
             </div>
-            <span className="text-[10px] text-slate-400">จากยอดเงินสดคงเหลือ {formatCurrency(runway.currentLiquidBalance)}</span>
+            <span className="text-[10px] text-slate-400">
+              จากยอดเงินสดคงเหลือ {formatCurrency(runway.currentLiquidBalance)}
+            </span>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-            <span className="text-slate-400 block text-[11px]">ค่าใช้จ่ายจำเป็นคงที่ (Baseline Needs):</span>
+            <span className="text-slate-400 block text-[11px]">
+              ค่าใช้จ่ายจำเป็นคงที่ (Baseline Needs):
+            </span>
             <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
-              {formatCurrency(runway.monthlyEssentialExpenses)} <span className="text-xs font-normal text-slate-500">/ เดือน</span>
+              {formatCurrency(runway.monthlyEssentialExpenses)}{' '}
+              <span className="text-xs font-normal text-slate-500">/ เดือน</span>
             </div>
             <span className="text-[10px] text-slate-400">ค่าหอพัก น้ำไฟ อาหารหลัก ค่าเดินทาง</span>
           </div>
@@ -290,7 +254,8 @@ export const DashboardPage: React.FC = () => {
           <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
             <span className="text-slate-400 block text-[11px]">งบปลอดภัยเฉลี่ยที่ใช้ได้:</span>
             <div className="text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
-              {formatCurrency(runway.safeDailySpend)} <span className="text-xs font-normal text-slate-500">/ วัน</span>
+              {formatCurrency(runway.safeDailySpend)}{' '}
+              <span className="text-xs font-normal text-slate-500">/ วัน</span>
             </div>
             <span className="text-[10px] text-slate-400">คำนวณจากวันคงเหลือในเดือนนี้</span>
           </div>
@@ -306,7 +271,10 @@ export const DashboardPage: React.FC = () => {
               <CardTitle className="text-base">แนวโน้มรายจ่าย 7 วันย้อนหลัง</CardTitle>
               <CardDescription>กราฟติดตามค่าใช้จ่ายรายวันในสัปดาห์นี้</CardDescription>
             </div>
-            <Link to="/reports" className="text-xs text-slate-600 dark:text-slate-400 font-medium hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center transition-colors">
+            <Link
+              to="/reports"
+              className="text-xs text-slate-600 dark:text-slate-400 font-medium hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center transition-colors"
+            >
               <span>ดูรายงานเต็ม</span>
               <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
             </Link>
@@ -322,7 +290,13 @@ export const DashboardPage: React.FC = () => {
                       <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="dayName" fontSize={11} stroke="#94a3b8" tickLine={false} axisLine={false} />
+                  <XAxis
+                    dataKey="dayName"
+                    fontSize={11}
+                    stroke="#94a3b8"
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'rgba(15, 23, 42, 0.9)',
@@ -333,7 +307,10 @@ export const DashboardPage: React.FC = () => {
                     }}
                     formatter={(val: unknown) => [formatCurrency(Number(val) || 0), 'รายจ่าย']}
                     labelFormatter={(lbl, payload) => {
-                      const item = payload && payload.length > 0 ? (payload[0]?.payload as { date?: string } | undefined) : undefined;
+                      const item =
+                        payload && payload.length > 0
+                          ? (payload[0]?.payload as { date?: string } | undefined)
+                          : undefined;
                       return item?.date ? formatThaiDate(item.date, 'medium') : String(lbl || '');
                     }}
                   />
@@ -370,7 +347,10 @@ export const DashboardPage: React.FC = () => {
               <div className="flex justify-between text-xs font-medium">
                 <span className="text-slate-500 dark:text-slate-400">โควตารายวัน</span>
                 <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-200">
-                  {formatCurrency(quota.dailyRemaining)} <span className="font-normal text-slate-400">/ {formatCurrency(quota.dailyCap)}</span>
+                  {formatCurrency(quota.dailyRemaining)}{' '}
+                  <span className="font-normal text-slate-400">
+                    / {formatCurrency(quota.dailyCap)}
+                  </span>
                 </span>
               </div>
               <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -386,13 +366,18 @@ export const DashboardPage: React.FC = () => {
               <div className="flex justify-between text-xs font-medium">
                 <span className="text-slate-500 dark:text-slate-400">โควตารายเดือน</span>
                 <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-200">
-                  {formatCurrency(quota.monthlyRemaining)} <span className="font-normal text-slate-400">/ {formatCurrency(quota.monthlyCap)}</span>
+                  {formatCurrency(quota.monthlyRemaining)}{' '}
+                  <span className="font-normal text-slate-400">
+                    / {formatCurrency(quota.monthlyCap)}
+                  </span>
                 </span>
               </div>
               <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-slate-700 dark:bg-slate-400 transition-all"
-                  style={{ width: `${Math.min(100, (quota.monthlyUsed / quota.monthlyCap) * 100)}%` }}
+                  style={{
+                    width: `${Math.min(100, (quota.monthlyUsed / quota.monthlyCap) * 100)}%`,
+                  }}
                 />
               </div>
             </div>
@@ -411,11 +396,12 @@ export const DashboardPage: React.FC = () => {
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div>
             <CardTitle className="text-base">รายการบันทึกล่าสุด</CardTitle>
-            <CardDescription className="text-xs">
-              5 รายการล่าสุดที่ทำรายการในระบบ
-            </CardDescription>
+            <CardDescription className="text-xs">5 รายการล่าสุดที่ทำรายการในระบบ</CardDescription>
           </div>
-          <Link to="/transactions" className="text-xs text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 font-medium flex items-center transition-colors">
+          <Link
+            to="/transactions"
+            className="text-xs text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 font-medium flex items-center transition-colors"
+          >
             <span>ดูทั้งหมด ({transactions.length})</span>
             <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
           </Link>
@@ -439,8 +425,7 @@ export const DashboardPage: React.FC = () => {
                       <div
                         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white shadow-2xs"
                         style={{
-                          backgroundColor:
-                            category?.color || (isExpense ? '#f43f5e' : '#10b981'),
+                          backgroundColor: category?.color || (isExpense ? '#f43f5e' : '#10b981'),
                         }}
                       >
                         <CategoryIcon name={category?.icon} className="h-4 w-4" />
@@ -468,7 +453,9 @@ export const DashboardPage: React.FC = () => {
                       <span
                         className={cn(
                           'font-semibold text-xs tabular-nums',
-                          isExpense ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-600 dark:text-emerald-400'
+                          isExpense
+                            ? 'text-slate-900 dark:text-slate-100'
+                            : 'text-emerald-600 dark:text-emerald-400'
                         )}
                       >
                         {isExpense ? '-' : '+'}

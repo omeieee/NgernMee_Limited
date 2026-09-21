@@ -2,7 +2,7 @@
 // Central state management for NgernMee Limited (Zustand)
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Category, Profile, TaxCalculationResult, TaxConfig, Transaction } from '../lib/types';
 import {
   createInitialCategories,
@@ -11,10 +11,16 @@ import {
   DEMO_PROFILE,
   DEMO_USER_ID,
 } from '../lib/mockData';
-import { calculateDiscount, getDailyUsage, getMonthlyUsage, getRemainingQuota } from '../lib/thaiChuayThai';
-import { calculateTax } from '../lib/thaiTax';
+import {
+  calculateDiscount,
+  getDailyUsage,
+  getMonthlyUsage,
+  getRemainingQuota,
+} from '../lib/thaiChuayThai';
+import { calculateTax, classifyAnnualIncome } from '../packages/tax-engine';
 import { generateId } from '../lib/utils';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getStorageAdapter } from '../packages/storage';
 
 export interface AppState {
   // Theme
@@ -45,7 +51,9 @@ export interface AppState {
   // Transactions
   transactions: Transaction[];
   setTransactions: (transactions: Transaction[]) => void;
-  addTransaction: (tx: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<Transaction>;
+  addTransaction: (
+    tx: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>
+  ) => Promise<Transaction>;
   updateTransaction: (id: string, updates: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
 
@@ -55,7 +63,10 @@ export interface AppState {
   getTaxCalculation: (overrideGrossIncome?: number) => TaxCalculationResult;
 
   // Thai Chuay Thai Quota helper
-  getThaiChuayThaiStatus: (dateStr?: string, pendingAmount?: number) => ReturnType<typeof getRemainingQuota>;
+  getThaiChuayThaiStatus: (
+    dateStr?: string,
+    pendingAmount?: number
+  ) => ReturnType<typeof getRemainingQuota>;
 
   // Reset / Refresh
   resetToDemoData: () => void;
@@ -83,6 +94,23 @@ function collectDescendantCategoryIds(categories: Category[], rootId: string): S
 function isRealSupabaseUser(user: { id: string } | null | undefined): boolean {
   return Boolean(user && user.id && user.id !== DEMO_USER_ID);
 }
+
+const fallbackStorage = new Map<string, string>();
+
+const safeStorage = createJSONStorage(() => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return window.localStorage;
+  }
+  return {
+    getItem: (key: string) => fallbackStorage.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      fallbackStorage.set(key, value);
+    },
+    removeItem: (key: string) => {
+      fallbackStorage.delete(key);
+    },
+  };
+});
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -176,36 +204,25 @@ export const useAppStore = create<AppState>()(
       },
 
       updateProfile: async (displayName: string) => {
-        const currentUserId = get().user?.id;
-        const isRealUser = isRealSupabaseUser(get().user);
-        if (isSupabaseConfigured && !get().isDemoMode && isRealUser && currentUserId) {
-          try {
-            // Use upsert to guarantee the profile row is created even if signup trigger didn't fire
-            const { error } = await supabase
-              .from('profiles')
-              .upsert({
-                id: currentUserId,
-                display_name: displayName,
-                updated_at: new Date().toISOString(),
-              }, { onConflict: 'id' });
-
-            if (error) {
-              console.warn('Supabase update profile error, falling back to local state:', error);
-            }
-
-            // Also update Supabase auth metadata so session and auth user stay synchronized
-            await supabase.auth.updateUser({
-              data: { display_name: displayName },
-            }).catch(console.warn);
-          } catch (e) {
-            console.warn('Supabase update profile failed, falling back to local state:', e);
+        const currentUserId = get().user?.id || DEMO_USER_ID;
+        const storage = getStorageAdapter(get().user, get().isDemoMode);
+        try {
+          await storage.updateProfile(currentUserId, { display_name: displayName });
+          if (isSupabaseConfigured && !get().isDemoMode && isRealSupabaseUser(get().user)) {
+            await supabase.auth
+              .updateUser({
+                data: { display_name: displayName },
+              })
+              .catch(console.warn);
           }
+        } catch (e) {
+          console.warn('Storage update profile note:', e);
         }
         set((state) => ({
           profile: state.profile
             ? { ...state.profile, display_name: displayName, updated_at: new Date().toISOString() }
             : {
-                id: currentUserId || DEMO_USER_ID,
+                id: currentUserId,
                 display_name: displayName,
                 avatar_url: null,
                 created_at: new Date().toISOString(),
@@ -241,40 +258,26 @@ export const useAppStore = create<AppState>()(
           user_id: currentUserId,
           created_at: new Date().toISOString(),
         };
-
-        const isRealUser = isRealSupabaseUser(get().user);
-
-        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
-          try {
-            const { children, ...dbCat } = newCat;
-            const { data, error } = await supabase.from('categories').insert(dbCat).select().single();
-            if (error) {
-              console.warn('Supabase add category error, falling back to local state:', error);
-            } else if (data) {
-              set((state) => ({ categories: [...state.categories, data] }));
-              return data;
-            }
-          } catch (e) {
-            console.warn('Supabase add category failed, falling back to local state:', e);
+        const storage = getStorageAdapter(get().user, get().isDemoMode);
+        try {
+          const saved = await storage.saveCategory(newCat);
+          if (saved) {
+            set((state) => ({ categories: [...state.categories, saved] }));
+            return saved;
           }
+        } catch (e) {
+          console.warn('Storage add category note, falling back to local state:', e);
         }
-
         set((state) => ({ categories: [...state.categories, newCat] }));
         return newCat;
       },
 
       updateCategory: async (id, updates) => {
-        const isRealUser = isRealSupabaseUser(get().user);
-        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
-          try {
-            const { children, ...dbUpdates } = updates;
-            const { error } = await supabase.from('categories').update(dbUpdates).eq('id', id);
-            if (error) {
-              console.warn('Supabase update category error, falling back to local state:', error);
-            }
-          } catch (e) {
-            console.warn('Supabase update category failed, falling back to local state:', e);
-          }
+        const storage = getStorageAdapter(get().user, get().isDemoMode);
+        try {
+          await storage.updateCategory(id, updates);
+        } catch (e) {
+          console.warn('Storage update category note:', e);
         }
         set((state) => ({
           categories: state.categories.map((c) => (c.id === id ? { ...c, ...updates } : c)),
@@ -284,20 +287,13 @@ export const useAppStore = create<AppState>()(
       deleteCategory: async (id) => {
         const idsToDelete = collectDescendantCategoryIds(get().categories, id);
         const idsArray = Array.from(idsToDelete);
-        const isRealUser = isRealSupabaseUser(get().user);
-
-        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
-          try {
-            const { error } = await supabase.from('categories').delete().in('id', idsArray);
-            if (error) {
-              console.warn('Supabase delete category error, falling back to local state:', error);
-            }
-          } catch (e) {
-            console.warn('Supabase delete category failed, falling back to local state:', e);
-          }
+        const storage = getStorageAdapter(get().user, get().isDemoMode);
+        try {
+          await storage.deleteCategories(idsArray);
+        } catch (e) {
+          console.warn('Storage delete category note:', e);
         }
         set((state) => ({
-          // Delete node and all its descendants
           categories: state.categories.filter((c) => !idsToDelete.has(c.id)),
         }));
       },
@@ -310,20 +306,16 @@ export const useAppStore = create<AppState>()(
           return;
         }
 
-        if (isSupabaseConfigured && !get().isDemoMode && uid !== DEMO_USER_ID) {
+        const storage = getStorageAdapter(get().user, get().isDemoMode);
+        if (storage.seedDefaultCategories && uid !== DEMO_USER_ID) {
           try {
-            await supabase.rpc('initialize_my_categories');
-            const { data: dbCats, error } = await supabase
-              .from('categories')
-              .select('*')
-              .eq('user_id', uid)
-              .order('sort_order');
-            if (!error && dbCats && dbCats.length > 0) {
+            const dbCats = await storage.seedDefaultCategories(uid);
+            if (dbCats && dbCats.length > 0) {
               set({ categories: dbCats });
               return;
             }
           } catch (e) {
-            console.error('Failed to initialize categories from Supabase RPC:', e);
+            console.warn('Storage seed categories note, falling back to local defaults:', e);
           }
         }
 
@@ -363,50 +355,15 @@ export const useAppStore = create<AppState>()(
           updated_at: now,
         };
 
-        const isRealUser = isRealSupabaseUser(get().user);
-
-        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
-          try {
-            const dbPayload = {
-              id: newTx.id,
-              user_id: newTx.user_id,
-              category_id: newTx.category_id || null,
-              type: newTx.type,
-              amount: Number(newTx.amount) || 0,
-              description: newTx.description,
-              transaction_date: newTx.transaction_date,
-              is_salary: Boolean(newTx.is_salary),
-              income_type: newTx.type === 'income' ? (newTx.income_type || 'other') : null,
-              gross_amount: Number(newTx.gross_amount ?? newTx.amount) || 0,
-              withholding_tax_rate: Number(newTx.withholding_tax_rate) || 0,
-              withholding_tax_amount: Number(newTx.withholding_tax_amount) || 0,
-              is_thai_chuay_thai: Boolean(newTx.is_thai_chuay_thai),
-              thai_chuay_thai_discount: Number(newTx.thai_chuay_thai_discount) || 0,
-              net_amount: Number(newTx.net_amount) || 0,
-              metadata: newTx.metadata || {},
-              created_at: newTx.created_at,
-              updated_at: newTx.updated_at,
-            };
-
-            const { data, error } = await supabase.from('transactions').insert(dbPayload).select().single();
-            if (error) {
-              console.warn('Supabase add transaction error, falling back to local store:', error);
-            } else if (data) {
-              const formattedRow: Transaction = {
-                ...data,
-                amount: Number(data.amount) || 0,
-                net_amount: Number(data.net_amount) || 0,
-                gross_amount: Number(data.gross_amount ?? data.amount) || 0,
-                withholding_tax_rate: Number(data.withholding_tax_rate) || 0,
-                withholding_tax_amount: Number(data.withholding_tax_amount) || 0,
-                thai_chuay_thai_discount: Number(data.thai_chuay_thai_discount) || 0,
-              };
-              set((state) => ({ transactions: [formattedRow, ...state.transactions] }));
-              return formattedRow;
-            }
-          } catch (e) {
-            console.warn('Supabase add transaction failed, falling back to local store:', e);
+        const storage = getStorageAdapter(get().user, get().isDemoMode);
+        try {
+          const saved = await storage.saveTransaction(newTx);
+          if (saved) {
+            set((state) => ({ transactions: [saved, ...state.transactions] }));
+            return saved;
           }
+        } catch (e) {
+          console.warn('Storage add transaction note, falling back to local state:', e);
         }
 
         set((state) => ({ transactions: [newTx, ...state.transactions] }));
@@ -416,39 +373,15 @@ export const useAppStore = create<AppState>()(
       updateTransaction: async (id, updates) => {
         const updatePayload: Partial<Transaction> = {
           ...updates,
-          category_id: updates.category_id !== undefined ? (updates.category_id || null) : undefined,
+          category_id: updates.category_id !== undefined ? updates.category_id || null : undefined,
           updated_at: new Date().toISOString(),
         };
 
-        const isRealUser = isRealSupabaseUser(get().user);
-
-        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
-          try {
-            const dbUpdates: Record<string, unknown> = {
-              updated_at: updatePayload.updated_at,
-            };
-            if (updates.type !== undefined) dbUpdates.type = updates.type;
-            if (updates.amount !== undefined) dbUpdates.amount = Number(updates.amount);
-            if (updates.description !== undefined) dbUpdates.description = updates.description;
-            if (updates.category_id !== undefined) dbUpdates.category_id = updates.category_id || null;
-            if (updates.transaction_date !== undefined) dbUpdates.transaction_date = updates.transaction_date;
-            if (updates.is_salary !== undefined) dbUpdates.is_salary = Boolean(updates.is_salary);
-            if (updates.income_type !== undefined) dbUpdates.income_type = updates.type === 'income' ? updates.income_type : null;
-            if (updates.gross_amount !== undefined) dbUpdates.gross_amount = Number(updates.gross_amount);
-            if (updates.withholding_tax_rate !== undefined) dbUpdates.withholding_tax_rate = Number(updates.withholding_tax_rate);
-            if (updates.withholding_tax_amount !== undefined) dbUpdates.withholding_tax_amount = Number(updates.withholding_tax_amount);
-            if (updates.is_thai_chuay_thai !== undefined) dbUpdates.is_thai_chuay_thai = Boolean(updates.is_thai_chuay_thai);
-            if (updates.thai_chuay_thai_discount !== undefined) dbUpdates.thai_chuay_thai_discount = Number(updates.thai_chuay_thai_discount);
-            if (updates.net_amount !== undefined) dbUpdates.net_amount = Number(updates.net_amount);
-            if (updates.metadata !== undefined) dbUpdates.metadata = updates.metadata;
-
-            const { error } = await supabase.from('transactions').update(dbUpdates).eq('id', id);
-            if (error) {
-              console.warn('Supabase update transaction error, falling back to local store:', error);
-            }
-          } catch (e) {
-            console.warn('Supabase update transaction failed, falling back to local store:', e);
-          }
+        const storage = getStorageAdapter(get().user, get().isDemoMode);
+        try {
+          await storage.updateTransaction(id, updatePayload);
+        } catch (e) {
+          console.warn('Storage update transaction note:', e);
         }
 
         set((state) => ({
@@ -459,17 +392,11 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteTransaction: async (id) => {
-        const isRealUser = isRealSupabaseUser(get().user);
-
-        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
-          try {
-            const { error } = await supabase.from('transactions').delete().eq('id', id);
-            if (error) {
-              console.warn('Supabase delete transaction error, falling back to local store:', error);
-            }
-          } catch (e) {
-            console.warn('Supabase delete transaction failed, falling back to local store:', e);
-          }
+        const storage = getStorageAdapter(get().user, get().isDemoMode);
+        try {
+          await storage.deleteTransaction(id);
+        } catch (e) {
+          console.warn('Storage delete transaction note:', e);
         }
 
         set((state) => ({
@@ -488,18 +415,11 @@ export const useAppStore = create<AppState>()(
           user_id: currentUserId,
           updated_at: new Date().toISOString(),
         };
-        const isRealUser = isRealSupabaseUser(get().user);
-        if (isSupabaseConfigured && !get().isDemoMode && isRealUser) {
-          try {
-            const { error } = await supabase
-              .from('tax_configs')
-              .upsert(updatedConfig, { onConflict: 'user_id,tax_year' });
-            if (error) {
-              console.warn('Supabase update tax config error, falling back to local store:', error);
-            }
-          } catch (e) {
-            console.warn('Supabase update tax config failed, falling back to local store:', e);
-          }
+        const storage = getStorageAdapter(get().user, get().isDemoMode);
+        try {
+          await storage.saveTaxConfig(currentUserId, updatedConfig);
+        } catch (e) {
+          console.warn('Storage save tax config note:', e);
         }
         set({ taxConfig: updatedConfig });
       },
@@ -507,64 +427,26 @@ export const useAppStore = create<AppState>()(
       getTaxCalculation: (overrideGrossIncome?: number) => {
         const { taxConfig, transactions } = get();
         if (typeof overrideGrossIncome === 'number') {
-          return calculateTax(overrideGrossIncome, taxConfig.additional_deductions, taxConfig.tax_year);
+          return calculateTax(
+            overrideGrossIncome,
+            taxConfig.additional_deductions,
+            taxConfig.tax_year
+          );
         }
 
-        const yearStr = String(taxConfig.tax_year);
-        const yearTxs = transactions.filter(
-          (tx) => tx.type === 'income' && tx.transaction_date.startsWith(yearStr)
-        );
-
-        let salary40_1 = 0;
-        let freelance40_2 = 0;
-        let allowanceExempt = 0;
-        let scholarshipExempt = 0;
-        let otherTaxable = 0;
-        let withholdingTaxTotal = 0;
-
-        for (const tx of yearTxs) {
-          const wht = tx.withholding_tax_amount || 0;
-          withholdingTaxTotal += wht;
-
-          // Differentiate by income_type
-          if (tx.income_type === 'freelance_part_time') {
-            freelance40_2 += tx.gross_amount || (tx.net_amount + wht);
-          } else if (tx.income_type === 'allowance') {
-            allowanceExempt += tx.net_amount;
-          } else if (tx.income_type === 'scholarship') {
-            scholarshipExempt += tx.net_amount;
-          } else if (tx.income_type === 'salary' || tx.is_salary) {
-            salary40_1 += tx.gross_amount || tx.amount;
-          } else {
-            // Check fallback keywords if not explicitly tagged
-            const desc = tx.description.toLowerCase();
-            if (desc.includes('แม่') || desc.includes('พ่อ') || desc.includes('ค่าขนม') || desc.includes('ครอบครัว')) {
-              allowanceExempt += tx.net_amount;
-            } else if (desc.includes('พาร์ทไทม์') || desc.includes('ฟรีแลนซ์') || desc.includes('สอนพิเศษ')) {
-              freelance40_2 += tx.gross_amount || (tx.net_amount + wht);
-            } else {
-              otherTaxable += tx.gross_amount || tx.amount;
-            }
-          }
-        }
+        const classified = classifyAnnualIncome(transactions, taxConfig.tax_year);
 
         // If no transactions logged yet, fallback to taxConfig.annual_salary
-        if (salary40_1 === 0 && freelance40_2 === 0 && otherTaxable === 0 && taxConfig.annual_salary > 0) {
-          salary40_1 = taxConfig.annual_salary;
+        if (
+          classified.salary40_1 === 0 &&
+          classified.freelance40_2 === 0 &&
+          classified.otherTaxable === 0 &&
+          taxConfig.annual_salary > 0
+        ) {
+          classified.salary40_1 = taxConfig.annual_salary;
         }
 
-        return calculateTax(
-          {
-            salary40_1,
-            freelance40_2,
-            allowanceExempt,
-            scholarshipExempt,
-            otherTaxable,
-            withholdingTaxTotal,
-          },
-          taxConfig.additional_deductions,
-          taxConfig.tax_year
-        );
+        return calculateTax(classified, taxConfig.additional_deductions, taxConfig.tax_year);
       },
 
       getThaiChuayThaiStatus: (dateStr?: string, pendingAmount: number = 0) => {
@@ -621,7 +503,8 @@ export const useAppStore = create<AppState>()(
 
           // If profile row doesn't exist in Supabase yet, create it from auth metadata
           if (!profile) {
-            const defaultName = authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'ผู้ใช้งาน';
+            const defaultName =
+              authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'ผู้ใช้งาน';
             const newProfile: Profile = {
               id: uid,
               display_name: defaultName,
@@ -692,7 +575,9 @@ export const useAppStore = create<AppState>()(
           if (!tax) {
             const initialTax = createInitialTaxConfig(uid);
             try {
-              await supabase.from('tax_configs').upsert(initialTax, { onConflict: 'user_id,tax_year' });
+              await supabase
+                .from('tax_configs')
+                .upsert(initialTax, { onConflict: 'user_id,tax_year' });
               tax = initialTax;
             } catch (e) {
               console.warn('Initial tax config seed note:', e);
@@ -700,9 +585,7 @@ export const useAppStore = create<AppState>()(
             }
           }
 
-          const resolvedCats = (cats && cats.length > 0)
-            ? cats
-            : createInitialCategories(uid);
+          const resolvedCats = cats && cats.length > 0 ? cats : createInitialCategories(uid);
 
           let finalTax = tax || createInitialTaxConfig(uid);
           if (finalTax) {
@@ -745,6 +628,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'ngernmee-storage',
+      storage: safeStorage,
       partialize: (state) => ({
         theme: state.theme,
         user: state.user,

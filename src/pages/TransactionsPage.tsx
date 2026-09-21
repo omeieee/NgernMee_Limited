@@ -15,7 +15,9 @@ import type { Transaction, TransactionType } from '../lib/types';
 export const TransactionsPage: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(
+    null
+  );
   const [quickFillData, setQuickFillData] = useState<Partial<Transaction> | null>(null);
 
   const {
@@ -23,6 +25,11 @@ export const TransactionsPage: React.FC = () => {
     quickSelectItems,
     filter,
     setFilter,
+    totalCount,
+    displayedCount,
+    hasMore,
+    loadMore,
+    showAll,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -84,10 +91,7 @@ export const TransactionsPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          onClick={handleOpenAdd}
-          className="gap-1.5 self-start sm:self-auto shadow-xs"
-        >
+        <Button onClick={handleOpenAdd} className="gap-1.5 self-start sm:self-auto shadow-xs">
           <Plus className="h-4 w-4" />
           <span>บันทึกรายการใหม่</span>
         </Button>
@@ -100,23 +104,33 @@ export const TransactionsPage: React.FC = () => {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle>ประวัติรายการบันทึก</CardTitle>
-          <CardDescription>
-            รายการรายรับและรายจ่ายทั้งหมด แยกตามวันที่
-          </CardDescription>
+          <CardDescription>รายการรายรับและรายจ่ายทั้งหมด แยกตามวันที่</CardDescription>
         </CardHeader>
 
         <CardContent>
           <TransactionList
             groupedTransactions={groupedTransactions}
+            totalCount={totalCount}
+            displayedCount={displayedCount}
+            hasMore={hasMore}
+            onLoadMore={loadMore}
+            onShowAll={showAll}
             onEdit={handleOpenEdit}
             onDelete={(id: string, description: string) => setDeleteTarget({ id, description })}
             searchQuery={filter.search || ''}
-            onSearchChange={(val: string) => setFilter((prev: TransactionFilter) => ({ ...prev, search: val }))}
+            onSearchChange={(val: string) =>
+              setFilter((prev: TransactionFilter) => ({ ...prev, search: val }))
+            }
             typeFilter={filter.type || 'all'}
-            onTypeFilterChange={(t: 'all' | TransactionType) => setFilter((prev: TransactionFilter) => ({ ...prev, type: t }))}
+            onTypeFilterChange={(t: 'all' | TransactionType) =>
+              setFilter((prev: TransactionFilter) => ({ ...prev, type: t }))
+            }
             onlyThaiChuayThai={Boolean(filter.onlyThaiChuayThai)}
             onOnlyThaiChuayThaiToggle={() =>
-              setFilter((prev: TransactionFilter) => ({ ...prev, onlyThaiChuayThai: !prev.onlyThaiChuayThai }))
+              setFilter((prev: TransactionFilter) => ({
+                ...prev,
+                onlyThaiChuayThai: !prev.onlyThaiChuayThai,
+              }))
             }
           />
         </CardContent>

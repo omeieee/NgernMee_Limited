@@ -1,16 +1,22 @@
-// src/hooks/useAnalytics.ts
-// Financial analytics, aggregations, and trend calculation hook
-
 import { useMemo } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import { useCategories } from './useCategories';
-import { calculateTax } from '../lib/thaiTax';
-import { calculateCashflowRunway, analyzeIncomeStreams } from '../lib/cashflowIntelligence';
+import {
+  calculatePeriodSummary,
+  calculateDailyTrend,
+  calculateCategorySpending,
+  calculateCashflowRunway,
+  analyzeIncomeStreams,
+} from '../packages/financial-intelligence';
 import type { Transaction } from '../lib/types';
 
 export type TimePeriod = 'this_month' | 'last_month' | 'this_year' | 'all' | 'custom';
 
-export function useAnalytics(period: TimePeriod = 'this_month', customStart?: string, customEnd?: string) {
+export function useAnalytics(
+  period: TimePeriod = 'this_month',
+  customStart?: string,
+  customEnd?: string
+) {
   const { transactions, taxConfig } = useAppStore();
   const { categoriesMap, getCategoryPathString } = useCategories();
 
@@ -58,106 +64,25 @@ export function useAnalytics(period: TimePeriod = 'this_month', customStart?: st
 
   // Summary Metrics (Income, Expense, Net, Thai Chuay Thai savings)
   const summary = useMemo(() => {
-    let totalIncome = 0;
-    let totalExpense = 0;
-    let totalThaiChuayThaiDiscount = 0;
-    let totalFullExpenseBeforeSubsidy = 0;
-    let salaryIncome = 0;
-
-    for (const tx of periodTransactions) {
-      if (tx.type === 'income') {
-        totalIncome += tx.net_amount;
-        if (tx.is_salary) {
-          salaryIncome += tx.net_amount;
-        }
-      } else {
-        totalExpense += tx.net_amount;
-        totalFullExpenseBeforeSubsidy += tx.amount;
-        if (tx.is_thai_chuay_thai) {
-          totalThaiChuayThaiDiscount += tx.thai_chuay_thai_discount || 0;
-        }
-      }
-    }
-
-    const netSavings = totalIncome - totalExpense;
-    const savingsRate = totalIncome > 0 ? (netSavings / totalIncome) * 100 : 0;
-
-    return {
-      totalIncome,
-      totalExpense,
-      netSavings,
-      savingsRate: Math.round(savingsRate * 10) / 10,
-      totalThaiChuayThaiDiscount,
-      totalFullExpenseBeforeSubsidy,
-      salaryIncome,
-    };
+    return calculatePeriodSummary(periodTransactions);
   }, [periodTransactions]);
 
   // Income vs Expense trend by date
   const trendData = useMemo(() => {
-    const dailyMap: Record<string, { date: string; income: number; expense: number; discount: number }> = {};
-
-    for (const tx of periodTransactions) {
-      if (!dailyMap[tx.transaction_date]) {
-        dailyMap[tx.transaction_date] = {
-          date: tx.transaction_date,
-          income: 0,
-          expense: 0,
-          discount: 0,
-        };
-      }
-
-      if (tx.type === 'income') {
-        dailyMap[tx.transaction_date].income += tx.net_amount;
-      } else {
-        dailyMap[tx.transaction_date].expense += tx.net_amount;
-        if (tx.is_thai_chuay_thai) {
-          dailyMap[tx.transaction_date].discount += tx.thai_chuay_thai_discount || 0;
-        }
-      }
-    }
-
-    return Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
+    return calculateDailyTrend(periodTransactions);
   }, [periodTransactions]);
 
   // Top spending categories
   const categorySpending = useMemo(() => {
-    const map = new Map<string, { id: string | null; name: string; color: string; amount: number; count: number }>();
-    const expenseTxs = periodTransactions.filter((tx) => tx.type === 'expense');
-
-    for (const tx of expenseTxs) {
-      const catId = tx.category_id || 'null';
-      const cat = tx.category_id ? categoriesMap.get(tx.category_id) : null;
-      const catName = cat ? cat.name : 'อื่นๆ (ไม่ระบุ)';
-      const catColor = cat?.color || '#64748b';
-
-      const existing = map.get(catId);
-      if (existing) {
-        existing.amount += tx.net_amount;
-        existing.count += 1;
-      } else {
-        map.set(catId, {
-          id: tx.category_id,
-          name: catName,
-          color: catColor,
-          amount: tx.net_amount,
-          count: 1,
-        });
-      }
-    }
-
-    const totalExp = summary.totalExpense || 1;
-    return Array.from(map.values())
-      .sort((a, b) => b.amount - a.amount)
-      .map((item) => ({
-        ...item,
-        percentage: Math.round((item.amount / totalExp) * 1000) / 10,
-      }));
-  }, [periodTransactions, categoriesMap, summary.totalExpense]);
+    return calculateCategorySpending(periodTransactions, categoriesMap);
+  }, [periodTransactions, categoriesMap]);
 
   // Frequent purchase items
   const frequentItems = useMemo(() => {
-    const itemMap = new Map<string, { description: string; count: number; totalAmount: number; avgAmount: number }>();
+    const itemMap = new Map<
+      string,
+      { description: string; count: number; totalAmount: number; avgAmount: number }
+    >();
 
     for (const tx of periodTransactions) {
       if (tx.type !== 'expense') continue;

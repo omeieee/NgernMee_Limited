@@ -20,10 +20,18 @@ import { CategoryPicker } from '../categories/CategoryPicker';
 import { useThaiChuayThai } from '../../hooks/useThaiChuayThai';
 import { formatCurrency, cn } from '../../lib/utils';
 import type { Transaction, TransactionType, IncomeType } from '../../lib/types';
+import {
+  calculateDraftAmounts,
+  buildTransactionPayload,
+  validateTransactionDraft,
+  suggestTransactionMeta,
+} from '../../packages/transaction-draft';
 
 interface TransactionFormProps {
   initialData?: Partial<Transaction> | null;
-  onSubmit: (data: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<void>;
+  onSubmit: (
+    data: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>
+  ) => Promise<void>;
   onCancel?: () => void;
   isModal?: boolean;
 }
@@ -35,7 +43,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   isModal = false,
 }) => {
   const [type, setType] = useState<TransactionType>(initialData?.type || 'expense');
-  const [amount, setAmount] = useState<string>(initialData?.amount ? String(initialData.amount) : '');
+  const [amount, setAmount] = useState<string>(
+    initialData?.amount ? String(initialData.amount) : ''
+  );
   const [description, setDescription] = useState(initialData?.description || '');
   const [categoryId, setCategoryId] = useState<string | null>(initialData?.category_id ?? null);
   const [transactionDate, setTransactionDate] = useState(
@@ -52,7 +62,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [customWhtAmount, setCustomWhtAmount] = useState<string>(
     initialData?.withholding_tax_amount ? String(initialData.withholding_tax_amount) : ''
   );
-  const [errors, setErrors] = useState<{ amount?: string; description?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{ amount?: string; description?: string; form?: string }>(
+    {}
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Hook for Thai Chuay Thai calculations and limits
@@ -66,89 +78,129 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       setDescription(initialData.description || '');
       setCategoryId(initialData.category_id ?? null);
       setTransactionDate(initialData.transaction_date || new Date().toISOString().slice(0, 10));
-      setIsThaiChuayThai(initialData.is_thai_chuay_thai || false);
+      setIsThaiChuayThai(Boolean(initialData.is_thai_chuay_thai));
       setIncomeType(initialData.income_type || (initialData.is_salary ? 'salary' : 'allowance'));
-      setHasWht(Boolean(initialData.withholding_tax_amount && initialData.withholding_tax_amount > 0));
+      setHasWht(
+        Boolean(initialData.withholding_tax_amount && initialData.withholding_tax_amount > 0)
+      );
       setWhtRate(initialData.withholding_tax_rate || 3);
       setCustomWhtAmount(
         initialData.withholding_tax_amount ? String(initialData.withholding_tax_amount) : ''
       );
+    } else {
+      setType('expense');
+      setAmount('');
+      setDescription('');
+      setCategoryId(null);
+      setTransactionDate(new Date().toISOString().slice(0, 10));
+      setIsThaiChuayThai(false);
+      setIncomeType('allowance');
+      setHasWht(false);
+      setWhtRate(3);
+      setCustomWhtAmount('');
     }
+    setErrors({});
   }, [initialData]);
 
   const numAmount = parseFloat(amount) || 0;
   const thaiChuayThaiCalc = calculateForExpense(numAmount);
 
-  const validate = () => {
-    const errs: { amount?: string; description?: string } = {};
-    if (!numAmount || numAmount <= 0) {
-      errs.amount = 'กรุณาระบุจำนวนเงินที่มากกว่า 0';
+  // Live calculation delegated to transaction-draft deep module
+  const draftAmounts = calculateDraftAmounts({
+    type,
+    amount: numAmount,
+    isThaiChuayThai,
+    thaiChuayThaiDiscount: thaiChuayThaiCalc.effectiveDiscount,
+    incomeType,
+    hasWht,
+    whtRate,
+    customWhtAmount: customWhtAmount ? parseFloat(customWhtAmount) || null : null,
+  });
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setDescription(val);
+    setErrors((prev) => ({ ...prev, description: undefined }));
+
+    // Heuristic smart suggestions on new transaction entry
+    if (!initialData?.id) {
+      const meta = suggestTransactionMeta(val, type);
+      if (meta.suggestedType && meta.suggestedType !== type) {
+        setType(meta.suggestedType);
+      }
+      if (meta.suggestedIncomeType) {
+        setIncomeType(meta.suggestedIncomeType);
+      }
+      if (meta.suggestedHasWht !== undefined) {
+        setHasWht(meta.suggestedHasWht);
+      }
+      if (meta.suggestedThaiChuayThai !== undefined) {
+        setIsThaiChuayThai(meta.suggestedThaiChuayThai);
+      }
     }
-    if (!description.trim()) {
-      errs.description = 'กรุณาระบุรายละเอียดรายการ';
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
 
+    const validation = validateTransactionDraft({
+      type,
+      amount: numAmount,
+      description,
+      category_id: categoryId,
+      transaction_date: transactionDate,
+      is_thai_chuay_thai: isThaiChuayThai,
+      income_type: incomeType,
+      has_wht: hasWht,
+      wht_rate: whtRate,
+      custom_wht_amount: customWhtAmount ? parseFloat(customWhtAmount) || null : null,
+    });
+
+    if (!validation.success) {
+      setErrors(validation.errors);
+      return;
+    }
+
+    setErrors({});
     setIsSubmitting(true);
-    setErrors((prev) => ({ ...prev, form: undefined }));
 
     try {
-      let discount = 0;
-      let net = numAmount;
-      let gross = numAmount;
-      let calculatedWht = 0;
+      const payload = buildTransactionPayload(
+        {
+          type,
+          amount: numAmount,
+          description,
+          category_id: categoryId,
+          transaction_date: transactionDate,
+          is_thai_chuay_thai: isThaiChuayThai,
+          income_type: incomeType,
+          has_wht: hasWht,
+          wht_rate: whtRate,
+          custom_wht_amount: customWhtAmount ? parseFloat(customWhtAmount) || null : null,
+        },
+        { effectiveDiscount: thaiChuayThaiCalc.effectiveDiscount }
+      );
 
-      if (type === 'expense') {
-        discount = isThaiChuayThai ? thaiChuayThaiCalc.effectiveDiscount : 0;
-        net = isThaiChuayThai ? thaiChuayThaiCalc.netAmount : numAmount;
-      } else {
-        // Income calculation
-        if (hasWht && (incomeType === 'freelance_part_time' || incomeType === 'salary' || incomeType === 'other')) {
-          if (customWhtAmount && parseFloat(customWhtAmount) > 0) {
-            calculatedWht = parseFloat(customWhtAmount);
-          } else {
-            calculatedWht = Math.round(numAmount * (whtRate / 100) * 100) / 100;
-          }
-          gross = numAmount;
-          net = Math.max(0, Math.round((numAmount - calculatedWht) * 100) / 100);
-        }
-      }
-
-      await onSubmit({
-        type,
-        amount: numAmount,
-        gross_amount: gross,
-        description: description.trim(),
-        category_id: categoryId || null,
-        transaction_date: transactionDate,
-        is_salary: type === 'income' ? incomeType === 'salary' : false,
-        income_type: type === 'income' ? incomeType : undefined,
-        withholding_tax_rate: type === 'income' && hasWht ? whtRate : 0,
-        withholding_tax_amount: type === 'income' && hasWht ? calculatedWht : 0,
-        is_thai_chuay_thai: type === 'expense' ? isThaiChuayThai : false,
-        thai_chuay_thai_discount: discount,
-        net_amount: net,
-      });
+      await onSubmit(payload);
 
       // Clear form if not in edit mode
       if (!initialData?.id) {
         setAmount('');
         setDescription('');
+        setCategoryId(null);
         setIsThaiChuayThai(false);
         setHasWht(false);
         setCustomWhtAmount('');
+        setErrors({});
       }
     } catch (err) {
       console.error('Submit transaction failed:', err);
       setErrors((prev) => ({
         ...prev,
-        form: err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง',
+        form:
+          err instanceof Error
+            ? err.message
+            : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง',
       }));
     } finally {
       setIsSubmitting(false);
@@ -185,7 +237,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
           )}
         >
-          <ArrowDownCircle className={cn('h-4 w-4', type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400')} />
+          <ArrowDownCircle
+            className={cn(
+              'h-4 w-4',
+              type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'
+            )}
+          />
           <span>รายจ่าย (Expense)</span>
         </button>
 
@@ -202,7 +259,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
           )}
         >
-          <ArrowUpCircle className={cn('h-4 w-4', type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400')} />
+          <ArrowUpCircle
+            className={cn(
+              'h-4 w-4',
+              type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
+            )}
+          />
           <span>รายรับ (Income)</span>
         </button>
       </div>
@@ -241,18 +303,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         placeholder="เช่น ค่าข้าวมันไก่, เงินเดือน, กาแฟ"
         value={description}
         error={errors.description}
-        onChange={(e) => {
-          setDescription(e.target.value);
-          setErrors((prev) => ({ ...prev, description: undefined }));
-        }}
+        onChange={handleDescriptionChange}
       />
 
       {/* Category Picker */}
-      <CategoryPicker
-        value={categoryId}
-        onChange={(id) => setCategoryId(id)}
-        type={type}
-      />
+      <CategoryPicker value={categoryId} onChange={(id) => setCategoryId(id)} type={type} />
 
       {/* Date Picker */}
       <div>
@@ -297,19 +352,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               {/* Calculation Breakdown */}
               <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200/70 dark:border-slate-800">
                 <div>
-                  <span className="text-slate-400 block text-[11px]">
-                    ส่วนลดรัฐช่วยจ่าย (60%):
-                  </span>
+                  <span className="text-slate-400 block text-[11px]">ส่วนลดรัฐช่วยจ่าย (60%):</span>
                   <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                    {formatCurrency(thaiChuayThaiCalc.effectiveDiscount)}
+                    {formatCurrency(draftAmounts.discount)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[11px]">
-                    คุณจ่ายสุทธิ (40%):
-                  </span>
+                  <span className="text-slate-400 block text-[11px]">คุณจ่ายสุทธิ (40%):</span>
                   <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
-                    {formatCurrency(thaiChuayThaiCalc.netAmount)}
+                    {formatCurrency(draftAmounts.net)}
                   </span>
                 </div>
               </div>
@@ -319,9 +370,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <div className="flex items-start gap-1.5 text-amber-700 dark:text-amber-300 text-[11px] bg-amber-50 dark:bg-amber-950/40 p-2 rounded-lg border border-amber-200/70 dark:border-amber-800/70">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                   <span>
-                    {thaiChuayThaiCalc.capReason === 'daily' && 'ยอดส่วนลดถูกจำกัดด้วยเพดานรายวัน (สูงสุด 200 บาท/วัน)'}
-                    {thaiChuayThaiCalc.capReason === 'monthly' && 'ยอดส่วนลดถูกจำกัดด้วยเพดานรายเดือน (สูงสุด 1,000 บาท/เดือน)'}
-                    {thaiChuayThaiCalc.capReason === 'both' && 'ยอดส่วนลดเต็มเพดานทั้งรายวันและรายเดือน'}
+                    {thaiChuayThaiCalc.capReason === 'daily' &&
+                      'ยอดส่วนลดถูกจำกัดด้วยเพดานรายวัน (สูงสุด 200 บาท/วัน)'}
+                    {thaiChuayThaiCalc.capReason === 'monthly' &&
+                      'ยอดส่วนลดถูกจำกัดด้วยเพดานรายเดือน (สูงสุด 1,000 บาท/เดือน)'}
+                    {thaiChuayThaiCalc.capReason === 'both' &&
+                      'ยอดส่วนลดเต็มเพดานทั้งรายวันและรายเดือน'}
                   </span>
                 </div>
               )}
@@ -459,7 +513,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <div className="flex items-center gap-2 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 p-2.5 border border-amber-200/70 dark:border-amber-900/50 text-[11px] text-amber-800 dark:text-amber-200">
               <ShieldCheck className="h-4 w-4 text-amber-600 shrink-0" />
               <span>
-                เงินค่าขนมหรือเงินช่วยเหลือจากผู้ปกครอง ได้รับยกเว้นภาษีตามกฎหมายไทย ไม่นำไปคิดภาษีเงินได้
+                เงินค่าขนมหรือเงินช่วยเหลือจากผู้ปกครอง ได้รับยกเว้นภาษีตามกฎหมายไทย
+                ไม่นำไปคิดภาษีเงินได้
               </span>
             </div>
           )}
@@ -522,19 +577,23 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                       <div>
                         <span className="text-slate-400 block text-[10px]">ยอดเงินจ้างรวม:</span>
                         <span className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
-                          {formatCurrency(numAmount)}
+                          {formatCurrency(draftAmounts.gross)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px]">ถูกหักภาษี {whtRate}%:</span>
+                        <span className="text-slate-400 block text-[10px]">
+                          ถูกหักภาษี {whtRate}%:
+                        </span>
                         <span className="font-semibold text-rose-600 dark:text-rose-400 tabular-nums">
-                          -{formatCurrency(customWhtAmount ? parseFloat(customWhtAmount) || 0 : numAmount * (whtRate / 100))}
+                          -{formatCurrency(draftAmounts.whtAmount)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px]">เงินเข้ากระเป๋าจริง:</span>
+                        <span className="text-slate-400 block text-[10px]">
+                          เงินเข้ากระเป๋าจริง:
+                        </span>
                         <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                          {formatCurrency(Math.max(0, numAmount - (customWhtAmount ? parseFloat(customWhtAmount) || 0 : numAmount * (whtRate / 100))))}
+                          {formatCurrency(draftAmounts.net)}
                         </span>
                       </div>
                     </div>
@@ -565,7 +624,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           isLoading={isSubmitting}
           className="min-h-[44px] px-5 touch-manipulation font-semibold flex-1 sm:flex-initial"
         >
-          {initialData?.id ? 'บันทึกการแก้ไข' : type === 'expense' ? 'บันทึกรายจ่าย' : 'บันทึกรายรับ'}
+          {initialData?.id
+            ? 'บันทึกการแก้ไข'
+            : type === 'expense'
+              ? 'บันทึกรายจ่าย'
+              : 'บันทึกรายรับ'}
         </Button>
       </div>
     </form>

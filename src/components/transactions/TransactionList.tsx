@@ -21,6 +21,11 @@ import type { Transaction, TransactionType } from '../../lib/types';
 
 interface TransactionListProps {
   groupedTransactions: Record<string, Transaction[]>;
+  totalCount?: number;
+  displayedCount?: number;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  onShowAll?: () => void;
   onEdit: (tx: Transaction) => void;
   onDelete: (id: string, description: string) => void;
   searchQuery: string;
@@ -33,6 +38,11 @@ interface TransactionListProps {
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   groupedTransactions,
+  totalCount,
+  displayedCount,
+  hasMore,
+  onLoadMore,
+  onShowAll,
   onEdit,
   onDelete,
   searchQuery,
@@ -109,9 +119,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
             ไม่พบรายการบันทึกที่ตรงตามเงื่อนไข
           </p>
-          <p className="text-xs text-slate-400 mt-1">
-            ลองปรับเปลี่ยนคำค้นหา หรือบันทึกรายการใหม่
-          </p>
+          <p className="text-xs text-slate-400 mt-1">ลองปรับเปลี่ยนคำค้นหา หรือบันทึกรายการใหม่</p>
         </div>
       ) : (
         dateKeys.map((dateStr) => {
@@ -161,8 +169,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                         <div
                           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-2xs"
                           style={{
-                            backgroundColor:
-                              category?.color || (isExpense ? '#f43f5e' : '#10b981'),
+                            backgroundColor: category?.color || (isExpense ? '#f43f5e' : '#10b981'),
                           }}
                         >
                           <CategoryIcon name={category?.icon} className="h-4.5 w-4.5" />
@@ -174,7 +181,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                               {tx.description}
                             </span>
                             {tx.is_thai_chuay_thai && (
-                              <Badge variant="outline" className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] text-slate-500 dark:text-slate-400 font-normal"
+                              >
                                 สิทธิเสริม 60/40
                               </Badge>
                             )}
@@ -196,9 +206,15 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                                 เงินเดือน 40(1)
                               </Badge>
                             )}
-                            {Boolean(tx.withholding_tax_amount && tx.withholding_tax_amount > 0) && (
-                              <Badge variant="secondary" className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
-                                หัก {tx.withholding_tax_rate || 3}% ({formatCurrency(tx.withholding_tax_amount || 0)})
+                            {Boolean(
+                              tx.withholding_tax_amount && tx.withholding_tax_amount > 0
+                            ) && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] text-blue-600 dark:text-blue-400 font-medium"
+                              >
+                                หัก {tx.withholding_tax_rate || 3}% (
+                                {formatCurrency(tx.withholding_tax_amount || 0)})
                               </Badge>
                             )}
                           </div>
@@ -272,6 +288,46 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             </div>
           );
         })
+      )}
+
+      {/* Pagination / Load More Footer */}
+      {dateKeys.length > 0 && totalCount !== undefined && totalCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">
+            แสดง{' '}
+            <strong className="font-semibold text-slate-800 dark:text-slate-200">
+              {displayedCount ?? 0}
+            </strong>{' '}
+            จากทั้งหมด{' '}
+            <strong className="font-semibold text-slate-800 dark:text-slate-200">
+              {totalCount}
+            </strong>{' '}
+            รายการ
+          </span>
+
+          {hasMore && (
+            <div className="flex items-center gap-2">
+              {onLoadMore && (
+                <button
+                  type="button"
+                  onClick={onLoadMore}
+                  className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-all shadow-2xs cursor-pointer active:scale-95 touch-manipulation"
+                >
+                  โหลดเพิ่มเติม (+20 รายการ)
+                </button>
+              )}
+              {onShowAll && (
+                <button
+                  type="button"
+                  onClick={onShowAll}
+                  className="rounded-xl border border-transparent bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 transition-all cursor-pointer active:scale-95 touch-manipulation"
+                >
+                  แสดงทั้งหมด ({totalCount})
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

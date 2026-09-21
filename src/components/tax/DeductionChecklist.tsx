@@ -4,7 +4,7 @@
 import React from 'react';
 import { ShieldCheck, Info, CheckCircle2 } from 'lucide-react';
 import type { AdditionalDeductions } from '../../lib/types';
-import { TAX_DEDUCTION_LIMITS } from '../../lib/thaiTax';
+import { TAX_DEDUCTION_LIMITS } from '../../packages/tax-engine';
 import { formatCurrency, formatNumber } from '../../lib/utils';
 
 interface DeductionChecklistProps {
@@ -31,10 +31,7 @@ export const DeductionChecklist: React.FC<DeductionChecklistProps> = ({
     TAX_DEDUCTION_LIMITS.SSF_MAX,
     Math.round(grossIncome * TAX_DEDUCTION_LIMITS.SSF_PERCENT)
   );
-  const maxPvd = Math.min(
-    TAX_DEDUCTION_LIMITS.PROVIDENT_FUND_MAX,
-    Math.round(grossIncome * 0.15)
-  );
+  const maxPvd = Math.min(TAX_DEDUCTION_LIMITS.PROVIDENT_FUND_MAX, Math.round(grossIncome * 0.15));
 
   const deductionItems: {
     key: keyof AdditionalDeductions;
@@ -122,7 +119,9 @@ export const DeductionChecklist: React.FC<DeductionChecklistProps> = ({
           <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
             <span className="text-slate-400 block text-[11px]">ค่าใช้จ่ายเงินเดือน 50%</span>
             <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-              {formatCurrency(Math.min(grossIncome * 0.5, TAX_DEDUCTION_LIMITS.EMPLOYMENT_EXPENSE_MAX))}
+              {formatCurrency(
+                Math.min(grossIncome * 0.5, TAX_DEDUCTION_LIMITS.EMPLOYMENT_EXPENSE_MAX)
+              )}
             </span>
             <span className="text-[10px] text-slate-400 block">สูงสุด 100,000 บาท</span>
           </div>
@@ -160,11 +159,15 @@ export const DeductionChecklist: React.FC<DeductionChecklistProps> = ({
                     </label>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{item.desc}</p>
                   </div>
-                  {isFilled && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />}
+                  {isFilled && (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                  )}
                 </div>
 
                 <div className="relative">
-                  <span className="absolute left-3 top-3 sm:top-2 text-xs font-semibold text-slate-400">฿</span>
+                  <span className="absolute left-3 top-3 sm:top-2 text-xs font-semibold text-slate-400">
+                    ฿
+                  </span>
                   <input
                     type="number"
                     min="0"
