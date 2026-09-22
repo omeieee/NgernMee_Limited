@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
-import { Settings, ShieldCheck, Sun, Moon, Coins, Menu } from 'lucide-react';
+import { Settings, ShieldCheck, Sun, Moon, Coins, Menu, Calculator } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_NAME } from '../../lib/constants';
@@ -106,6 +106,16 @@ export const AppShell: React.FC = () => {
                 <Sun className="h-4 w-4 text-amber-500" />
               )}
             </button>
+
+            {/* Mobile Tax Calculator shortcut */}
+            <Link
+              to="/tax"
+              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors touch-manipulation active:scale-95"
+              title="คำนวณภาษี ภ.ง.ด.91"
+              aria-label="คำนวณภาษี ภ.ง.ด.91"
+            >
+              <Calculator className="h-4 w-4" />
+            </Link>
 
             {/* Settings shortcut */}
             <Link

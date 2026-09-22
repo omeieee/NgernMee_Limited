@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ReceiptText, Plus, BarChart3, Calculator } from 'lucide-react';
+import { LayoutDashboard, ReceiptText, Plus, BarChart3, Settings } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { QuickTransactionSheet } from '../transactions/QuickTransactionSheet';
 
@@ -90,36 +90,7 @@ export const BottomNav: React.FC = () => {
           />
         </button>
 
-        {/* Tab 3: คำนวณภาษี */}
-        <NavLink
-          to="/tax"
-          className={({ isActive }) =>
-            cn(
-              'smooth-tap flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all relative min-h-[44px] min-w-[54px] select-none',
-              isActive
-                ? 'text-emerald-600 dark:text-emerald-400 font-bold scale-105'
-                : 'text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 font-medium'
-            )
-          }
-        >
-          {({ isActive }) => (
-            <>
-              <div
-                className={cn(
-                  'flex items-center justify-center rounded-lg p-1 transition-all',
-                  isActive && 'bg-emerald-50 dark:bg-emerald-950/70'
-                )}
-              >
-                <Calculator
-                  className={cn('h-5 w-5', isActive ? 'stroke-[2.25px]' : 'stroke-[1.75px]')}
-                />
-              </div>
-              <span className="text-[10px] mt-0.5 tracking-tight">ภาษี</span>
-            </>
-          )}
-        </NavLink>
-
-        {/* Tab 4: รายงาน */}
+        {/* Tab 3: รายงาน */}
         <NavLink
           to="/reports"
           className={({ isActive }) =>
@@ -144,6 +115,35 @@ export const BottomNav: React.FC = () => {
                 />
               </div>
               <span className="text-[10px] mt-0.5 tracking-tight">รายงาน</span>
+            </>
+          )}
+        </NavLink>
+
+        {/* Tab 4: ตั้งค่า */}
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            cn(
+              'smooth-tap flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all relative min-h-[44px] min-w-[54px] select-none',
+              isActive
+                ? 'text-emerald-600 dark:text-emerald-400 font-bold scale-105'
+                : 'text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 font-medium'
+            )
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <div
+                className={cn(
+                  'flex items-center justify-center rounded-lg p-1 transition-all',
+                  isActive && 'bg-emerald-50 dark:bg-emerald-950/70'
+                )}
+              >
+                <Settings
+                  className={cn('h-5 w-5', isActive ? 'stroke-[2.25px]' : 'stroke-[1.75px]')}
+                />
+              </div>
+              <span className="text-[10px] mt-0.5 tracking-tight">ตั้งค่า</span>
             </>
           )}
         </NavLink>

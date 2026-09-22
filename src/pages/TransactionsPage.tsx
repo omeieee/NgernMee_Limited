@@ -10,6 +10,8 @@ import { CategoryIcon } from '../components/ui/CategoryIcon';
 import { TransactionForm } from '../components/transactions/TransactionForm';
 import { QuickSelectPanel } from '../components/transactions/QuickSelectPanel';
 import { TransactionList } from '../components/transactions/TransactionList';
+import { TransactionDetailModal } from '../components/transactions/TransactionDetailModal';
+import { QuickTransactionSheet } from '../components/transactions/QuickTransactionSheet';
 import { useTransactions, type TransactionFilter } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { formatCurrency, formatThaiDate, cn } from '../lib/utils';
@@ -22,6 +24,9 @@ export const TransactionsPage: React.FC = () => {
     null
   );
   const [quickFillData, setQuickFillData] = useState<Partial<Transaction> | null>(null);
+  const [selectedTxForDetail, setSelectedTxForDetail] = useState<Transaction | null>(null);
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+  const [editingTxForSheet, setEditingTxForSheet] = useState<Transaction | null>(null);
 
   const {
     groupedTransactions,
@@ -106,7 +111,10 @@ export const TransactionsPage: React.FC = () => {
           </div>
           <button
             type="button"
-            onClick={handleOpenAdd}
+            onClick={() => {
+              setEditingTxForSheet(null);
+              setIsMobileSheetOpen(true);
+            }}
             className="smooth-tap neo-btn px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -244,7 +252,7 @@ export const TransactionsPage: React.FC = () => {
                       return (
                         <div
                           key={tx.id}
-                          onClick={() => handleOpenEdit(tx)}
+                          onClick={() => setSelectedTxForDetail(tx)}
                           className="p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors cursor-pointer touch-manipulation active:scale-[0.99]"
                         >
                           {/* Left Info */}
@@ -319,7 +327,8 @@ export const TransactionsPage: React.FC = () => {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleOpenEdit(tx);
+                                  setEditingTxForSheet(tx);
+                                  setIsMobileSheetOpen(true);
                                 }}
                                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
                                 title="แก้ไขรายการ"
@@ -468,6 +477,37 @@ export const TransactionsPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Mobile Transaction Detail Modal */}
+      <TransactionDetailModal
+        isOpen={Boolean(selectedTxForDetail)}
+        transaction={selectedTxForDetail}
+        category={
+          selectedTxForDetail?.category_id
+            ? categoriesMap.get(selectedTxForDetail.category_id)
+            : null
+        }
+        onClose={() => setSelectedTxForDetail(null)}
+        onEdit={(tx) => {
+          setSelectedTxForDetail(null);
+          setEditingTxForSheet(tx);
+          setIsMobileSheetOpen(true);
+        }}
+        onDelete={(tx) => {
+          setSelectedTxForDetail(null);
+          setDeleteTarget({ id: tx.id, description: tx.description });
+        }}
+      />
+
+      {/* Mobile Quick Transaction Sheet */}
+      <QuickTransactionSheet
+        isOpen={isMobileSheetOpen}
+        onClose={() => {
+          setIsMobileSheetOpen(false);
+          setEditingTxForSheet(null);
+        }}
+        editingTransaction={editingTxForSheet}
+      />
     </div>
   );
 };

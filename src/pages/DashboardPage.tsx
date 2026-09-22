@@ -30,6 +30,7 @@ import { Modal } from '../components/ui/Modal';
 import { CategoryIcon } from '../components/ui/CategoryIcon';
 import { TransactionForm } from '../components/transactions/TransactionForm';
 import { QuickTransactionSheet } from '../components/transactions/QuickTransactionSheet';
+import { TransactionDetailModal } from '../components/transactions/TransactionDetailModal';
 import { useAppStore } from '../stores/useAppStore';
 import { useCategories } from '../hooks/useCategories';
 import { useThaiChuayThai } from '../hooks/useThaiChuayThai';
@@ -39,14 +40,25 @@ import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import type { Transaction, TransactionType } from '../lib/types';
 
 export const DashboardPage: React.FC = () => {
-  const { profile, user, isDemoMode, transactions, addTransaction, theme, toggleTheme } =
-    useAppStore();
+  const {
+    profile,
+    user,
+    isDemoMode,
+    transactions,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    theme,
+    toggleTheme,
+  } = useAppStore();
   const { categoriesMap } = useCategories();
   const { quota } = useThaiChuayThai();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [mobileSheetType, setMobileSheetType] = useState<TransactionType>('expense');
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
+  const [selectedTxForDetail, setSelectedTxForDetail] = useState<Transaction | null>(null);
+  const [editingTxForSheet, setEditingTxForSheet] = useState<Transaction | null>(null);
 
   // Consolidated financial intelligence (computed in a single pass)
   const {
@@ -102,6 +114,7 @@ export const DashboardPage: React.FC = () => {
   const isSurplus = runway.currentLiquidBalance >= 0 && monthSavings >= 0;
 
   const openMobileSheet = (type: TransactionType) => {
+    setEditingTxForSheet(null);
     setMobileSheetType(type);
     setIsMobileSheetOpen(true);
   };
@@ -409,7 +422,8 @@ export const DashboardPage: React.FC = () => {
                 return (
                   <div
                     key={tx.id}
-                    className="p-3.5 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-white/[0.03] transition-colors"
+                    onClick={() => setSelectedTxForDetail(tx)}
+                    className="p-3.5 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-white/[0.03] transition-colors cursor-pointer touch-btn active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div
@@ -501,7 +515,8 @@ export const DashboardPage: React.FC = () => {
                   return (
                     <div
                       key={tx.id}
-                      className="p-3.5 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-white/[0.03] transition-colors"
+                      onClick={() => setSelectedTxForDetail(tx)}
+                      className="p-3.5 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-white/[0.03] transition-colors cursor-pointer touch-btn active:scale-[0.99]"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
@@ -1100,11 +1115,36 @@ export const DashboardPage: React.FC = () => {
         />
       </Modal>
 
-      {/* Quick Transaction Bottom Sheet (Mobile) */}
+      {/* Transaction Detail Receipt Modal (Matching Screenshot 2026-09-22 200258.png) */}
+      <TransactionDetailModal
+        isOpen={Boolean(selectedTxForDetail)}
+        transaction={selectedTxForDetail}
+        category={
+          selectedTxForDetail?.category_id
+            ? categoriesMap.get(selectedTxForDetail.category_id)
+            : null
+        }
+        onClose={() => setSelectedTxForDetail(null)}
+        onEdit={(tx) => {
+          setSelectedTxForDetail(null);
+          setEditingTxForSheet(tx);
+          setIsMobileSheetOpen(true);
+        }}
+        onDelete={async (tx) => {
+          await deleteTransaction(tx.id);
+          setSelectedTxForDetail(null);
+        }}
+      />
+
+      {/* Quick Transaction Bottom Sheet (Mobile - Matching Screenshot 2026-09-22 200228.png) */}
       <QuickTransactionSheet
         isOpen={isMobileSheetOpen}
-        onClose={() => setIsMobileSheetOpen(false)}
+        onClose={() => {
+          setIsMobileSheetOpen(false);
+          setEditingTxForSheet(null);
+        }}
         initialType={mobileSheetType}
+        editingTransaction={editingTxForSheet}
       />
     </div>
   );
