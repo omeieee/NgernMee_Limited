@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { buildCategoryTree, flattenCategoryTree } from './useCategories';
+import { useAppStore } from '../stores/useAppStore';
 import type { Category } from '../lib/types';
 
 describe('Category Tree & Ordering Logic', () => {
@@ -123,5 +124,53 @@ describe('Category Tree & Ordering Logic', () => {
       { name: 'เดินทาง', depth: 0 },
       { name: 'ค่าน้ำมันรถ', depth: 1 },
     ]);
+  });
+
+  describe('Category Deletion Scenarios & Cascading', () => {
+    beforeEach(() => {
+      useAppStore.setState({
+        categories: [...mockCategories],
+        isDemoMode: true,
+      });
+    });
+
+    it('deletes a single leaf category without affecting sibling or parent categories', async () => {
+      const store = useAppStore.getState();
+
+      // Delete leaf 'cat-greentea'
+      await store.deleteCategory('cat-greentea');
+
+      const remaining = useAppStore.getState().categories;
+      expect(remaining.some((c) => c.id === 'cat-greentea')).toBe(false);
+      // Parent 'cat-snack' and root 'cat-food' must remain
+      expect(remaining.some((c) => c.id === 'cat-snack')).toBe(true);
+      expect(remaining.some((c) => c.id === 'cat-food')).toBe(true);
+    });
+
+    it('recursively deletes all descendant children and grandchildren when a parent category is deleted', async () => {
+      const store = useAppStore.getState();
+
+      // Delete parent 'cat-food' which has 'cat-daily-food', 'cat-snack', and grandchild 'cat-greentea'
+      await store.deleteCategory('cat-food');
+
+      const remaining = useAppStore.getState().categories;
+      expect(remaining.some((c) => c.id === 'cat-food')).toBe(false);
+      expect(remaining.some((c) => c.id === 'cat-daily-food')).toBe(false);
+      expect(remaining.some((c) => c.id === 'cat-snack')).toBe(false);
+      expect(remaining.some((c) => c.id === 'cat-greentea')).toBe(false);
+
+      // Unrelated root 'cat-transport' and its child 'cat-gas' must remain untouched
+      expect(remaining.some((c) => c.id === 'cat-transport')).toBe(true);
+      expect(remaining.some((c) => c.id === 'cat-gas')).toBe(true);
+    });
+
+    it('handles deleting a non-existent category ID gracefully', async () => {
+      const store = useAppStore.getState();
+      const initialCount = store.categories.length;
+
+      await expect(store.deleteCategory('non-existent-cat-404')).resolves.not.toThrow();
+
+      expect(useAppStore.getState().categories.length).toBe(initialCount);
+    });
   });
 });

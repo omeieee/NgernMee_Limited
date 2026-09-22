@@ -127,4 +127,20 @@ describe('Financial Intelligence Deep Module', () => {
     expect(runway.runwayMonths).toBeGreaterThan(0);
     expect(runway.isCriticalRunway).toBe(false);
   });
+
+  it('correctly recalculates metrics when an item is deleted from transactions list', () => {
+    const refDate = new Date('2026-09-21T10:00:00Z');
+    // Delete tx2 (Thai Chuay Thai expense of net 40, subsidy 60)
+    const remainingTransactions = mockTransactions.filter((t) => t.id !== 'tx2');
+
+    const updatedStats = calculateDashboardStats(remainingTransactions, categoriesMap, refDate);
+
+    // Expense drops from 90 to 50
+    expect(updatedStats.todayExpense).toBe(50);
+    expect(updatedStats.monthExpense).toBe(50);
+    // Liquid balance increases from 39910 to 39950
+    expect(updatedStats.runway.currentLiquidBalance).toBe(39950);
+    // Co-Pay savings drops from 60 to 0
+    expect(updatedStats.monthThaiChuayThaiSavings).toBe(0);
+  });
 });

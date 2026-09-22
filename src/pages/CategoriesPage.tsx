@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowDownCircle, ArrowUpCircle, FolderTree, AlertTriangle, RotateCcw } from 'lucide-react';
+import {
+  Plus,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  FolderTree,
+  AlertTriangle,
+  RotateCcw,
+} from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -7,6 +14,7 @@ import { CategoryTree } from '../components/categories/CategoryTree';
 import { CategoryForm } from '../components/categories/CategoryForm';
 import { useCategories } from '../hooks/useCategories';
 import { useAppStore } from '../stores/useAppStore';
+import { useToastStore } from '../stores/useToastStore';
 import type { Category, TransactionType } from '../lib/types';
 import { cn } from '../lib/utils';
 
@@ -18,16 +26,14 @@ export const CategoriesPage: React.FC = () => {
   const [isSeeding, setIsSeeding] = useState(false);
 
   // Delete confirmation state
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; childCount: number } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+    childCount: number;
+  } | null>(null);
 
-  const {
-    categories,
-    expenseTree,
-    incomeTree,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-  } = useCategories();
+  const { categories, expenseTree, incomeTree, addCategory, updateCategory, deleteCategory } =
+    useCategories();
 
   const { initializeDefaultCategories, isLoading } = useAppStore();
 
@@ -62,9 +68,12 @@ export const CategoriesPage: React.FC = () => {
     setDeleteTarget({ id, name, childCount });
   };
 
+  const { showToast } = useToastStore();
+
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     await deleteCategory(deleteTarget.id);
+    showToast('ลบหมวดหมู่สำเร็จ', `หมวดหมู่ "${deleteTarget.name}" ถูกลบเรียบร้อยแล้ว`);
     setDeleteTarget(null);
   };
 
@@ -95,7 +104,12 @@ export const CategoriesPage: React.FC = () => {
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
             )}
           >
-            <ArrowDownCircle className={cn('h-4 w-4', activeTab === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400')} />
+            <ArrowDownCircle
+              className={cn(
+                'h-4 w-4',
+                activeTab === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'
+              )}
+            />
             <span>รายจ่าย ({categories.filter((c) => c.type === 'expense').length})</span>
           </button>
 
@@ -108,7 +122,12 @@ export const CategoriesPage: React.FC = () => {
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
             )}
           >
-            <ArrowUpCircle className={cn('h-4 w-4', activeTab === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400')} />
+            <ArrowUpCircle
+              className={cn(
+                'h-4 w-4',
+                activeTab === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
+              )}
+            />
             <span>รายรับ ({categories.filter((c) => c.type === 'income').length})</span>
           </button>
         </div>
@@ -122,7 +141,9 @@ export const CategoriesPage: React.FC = () => {
             className="min-h-[44px] touch-manipulation gap-1.5 flex-1 sm:flex-initial"
             title="รีเซ็ตและโหลดชุดหมวดหมู่เริ่มต้น (36 หมวดหมู่)"
           >
-            <RotateCcw className={cn('h-4 w-4', (isSeeding || isLoading) && 'animate-spin text-emerald-600')} />
+            <RotateCcw
+              className={cn('h-4 w-4', (isSeeding || isLoading) && 'animate-spin text-emerald-600')}
+            />
             <span>{isSeeding ? 'กำลังโหลด...' : 'โหลดหมวดหมู่เริ่มต้น'}</span>
           </Button>
 
@@ -160,7 +181,11 @@ export const CategoriesPage: React.FC = () => {
                 className="gap-2 mx-auto"
               >
                 <RotateCcw className={cn('h-4 w-4', (isSeeding || isLoading) && 'animate-spin')} />
-                <span>{isSeeding ? 'กำลังโหลดชุดหมวดหมู่...' : 'โหลดชุดหมวดหมู่เริ่มต้นทันที (36 หมวดหมู่)'}</span>
+                <span>
+                  {isSeeding
+                    ? 'กำลังโหลดชุดหมวดหมู่...'
+                    : 'โหลดชุดหมวดหมู่เริ่มต้นทันที (36 หมวดหมู่)'}
+                </span>
               </Button>
             </div>
           ) : (

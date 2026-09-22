@@ -59,7 +59,12 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   const catColor = category?.color || (isExpense ? '#f43f5e' : '#10b981');
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className={cn(
+        'fixed inset-0 z-50 flex items-center justify-center p-4',
+        !isVisible && 'pointer-events-none'
+      )}
+    >
       {/* Backdrop with Smooth Fade */}
       <div
         className={cn(
@@ -205,7 +210,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                onClose();
+                setIsVisible(false);
                 onDelete(currentTransaction);
               }}
               className="py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 dark:border-rose-500/30 neo-btn smooth-tap active:scale-95 transition-all cursor-pointer"

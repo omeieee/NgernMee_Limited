@@ -125,4 +125,17 @@ describe('Storage Package Seam', () => {
     cats = await adapter.getCategories('user_local_123');
     expect(cats.find((c) => c.id === 'cat_test_1')).toBeUndefined();
   });
+
+  it('safely handles deleting non-existent transactions and categories without error', async () => {
+    const adapter = new LocalStorageAdapter();
+
+    // Deleting non-existent transaction should not throw
+    await expect(adapter.deleteTransaction('non_existent_id')).resolves.not.toThrow();
+
+    // Deleting empty array of categories should not throw
+    await expect(adapter.deleteCategories([])).resolves.not.toThrow();
+
+    // Deleting non-existent category should not throw
+    await expect(adapter.deleteCategories(['non_existent_cat_id'])).resolves.not.toThrow();
+  });
 });

@@ -449,6 +449,12 @@ export const TransactionsPage: React.FC = () => {
           initialData={editingTransaction || quickFillData}
           onSubmit={handleFormSubmit}
           onCancel={() => setIsFormModalOpen(false)}
+          onDelete={(id) => {
+            const desc = editingTransaction?.description || '';
+            setIsFormModalOpen(false);
+            setEditingTransaction(null);
+            setDeleteTarget({ id, description: desc });
+          }}
           isModal
         />
       </Modal>
@@ -513,6 +519,11 @@ export const TransactionsPage: React.FC = () => {
           setEditingTxForSheet(null);
         }}
         editingTransaction={editingTxForSheet}
+        onDelete={(tx) => {
+          setIsMobileSheetOpen(false);
+          setEditingTxForSheet(null);
+          setDeleteTarget({ id: tx.id, description: tx.description });
+        }}
       />
     </div>
   );

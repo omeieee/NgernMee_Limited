@@ -13,6 +13,7 @@ import {
   Sparkles,
   ShieldCheck,
   TrendingUp,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { CategoryIcon } from '../ui/CategoryIcon';
@@ -38,6 +39,7 @@ interface TransactionFormProps {
     data: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>
   ) => Promise<void>;
   onCancel?: () => void;
+  onDelete?: (id: string) => Promise<void> | void;
   isModal?: boolean;
 }
 
@@ -45,6 +47,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   initialData,
   onSubmit,
   onCancel,
+  onDelete,
   isModal = false,
 }) => {
   const [type, setType] = useState<TransactionType>(initialData?.type || 'expense');
@@ -774,30 +777,46 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-        {onCancel && (
+      <div className="flex items-center justify-between gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <div>
+          {initialData?.id && onDelete && (
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => onDelete(initialData.id!)}
+              disabled={isSubmitting}
+              className="min-h-[44px] px-3.5 text-xs touch-manipulation gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>ลบรายการ</span>
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-2.5">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+              className="min-h-[44px] px-4 touch-manipulation"
+            >
+              ยกเลิก
+            </Button>
+          )}
           <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className="min-h-[44px] px-4 touch-manipulation"
+            type="submit"
+            variant={type === 'expense' ? 'danger' : 'default'}
+            isLoading={isSubmitting}
+            className="min-h-[44px] px-5 touch-manipulation font-semibold flex-1 sm:flex-initial"
           >
-            ยกเลิก
+            {initialData?.id
+              ? 'บันทึกการแก้ไข'
+              : type === 'expense'
+                ? 'บันทึกรายจ่าย'
+                : 'บันทึกรายรับ'}
           </Button>
-        )}
-        <Button
-          type="submit"
-          variant={type === 'expense' ? 'danger' : 'default'}
-          isLoading={isSubmitting}
-          className="min-h-[44px] px-5 touch-manipulation font-semibold flex-1 sm:flex-initial"
-        >
-          {initialData?.id
-            ? 'บันทึกการแก้ไข'
-            : type === 'expense'
-              ? 'บันทึกรายจ่าย'
-              : 'บันทึกรายรับ'}
-        </Button>
+        </div>
       </div>
     </form>
   );

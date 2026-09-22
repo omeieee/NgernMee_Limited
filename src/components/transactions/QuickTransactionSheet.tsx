@@ -17,7 +17,11 @@ import {
   ChevronRight,
   BadgePercent,
   Calculator,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 import { useAppStore } from '../../stores/useAppStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { useCategories } from '../../hooks/useCategories';
@@ -32,6 +36,7 @@ export interface QuickTransactionSheetProps {
   initialType?: TransactionType;
   editingTransaction?: Transaction | null;
   onSuccess?: () => void;
+  onDelete?: (tx: Transaction) => void;
 }
 
 const AMOUNT_PRESETS = [50, 100, 150, 300, 500];
@@ -42,12 +47,20 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
   initialType = 'expense',
   editingTransaction = null,
   onSuccess,
+  onDelete,
 }) => {
-  const { transactions, addTransaction, updateTransaction, getThaiChuayThaiStatus } = useAppStore();
+  const {
+    transactions,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    getThaiChuayThaiStatus,
+  } = useAppStore();
   const { categories, categoriesMap } = useCategories();
   const { showToast } = useToastStore();
 
   const isEditing = Boolean(editingTransaction);
+  const [isConfirmDelete, setIsConfirmDelete] = useState(false);
 
   const [type, setType] = useState<TransactionType>(
     editingTransaction ? editingTransaction.type : initialType
@@ -722,8 +735,68 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
                     : 'บันทึกรายรับ'}
             </span>
           </button>
+
+          {/* Delete Button when editing */}
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => setIsConfirmDelete(true)}
+              className="w-full py-3 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 dark:border-rose-500/30 neo-btn smooth-tap active:scale-95 transition-all cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>ลบรายการนี้</span>
+            </button>
+          )}
         </form>
       </div>
+
+      {/* Delete Confirmation Modal for QuickTransactionSheet */}
+      <Modal
+        isOpen={isConfirmDelete}
+        onClose={() => setIsConfirmDelete(false)}
+        title="ยืนยันการลบรายการ"
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-xl bg-rose-50 p-3 text-xs text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-rose-600" />
+            <div>
+              <p className="font-semibold">
+                คุณแน่ใจหรือไม่ว่าต้องการลบรายการ "{editingTransaction?.description}"?
+              </p>
+              <p className="mt-1 text-[11px]">
+                การลบรายการนี้จะไม่สามารถกู้คืนได้ และยอดเงินรวมจะถูกคำนวณคืนให้อัตโนมัติ
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setIsConfirmDelete(false)}>
+              ยกเลิก
+            </Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                if (editingTransaction) {
+                  if (onDelete) {
+                    onDelete(editingTransaction);
+                  } else {
+                    await deleteTransaction(editingTransaction.id);
+                    showToast(
+                      'ลบรายการสำเร็จ',
+                      `รายการ "${editingTransaction.description}" ถูกลบเรียบร้อยแล้ว`
+                    );
+                  }
+                  setIsConfirmDelete(false);
+                  onClose();
+                }
+              }}
+            >
+              ยืนยันการลบ
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>,
     document.body
   );

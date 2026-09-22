@@ -1,5 +1,6 @@
 // src/components/ui/Modal.tsx
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -43,8 +44,15 @@ export const Modal: React.FC<ModalProps> = ({
     xl: 'max-w-xl',
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  const isSmallConfirm = maxWidth === 'sm';
+
+  const modalContent = (
+    <div
+      className={cn(
+        'fixed inset-0 z-[60] flex justify-center',
+        isSmallConfirm ? 'items-center p-4' : 'items-end sm:items-center p-0 sm:p-4'
+      )}
+    >
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
@@ -52,15 +60,20 @@ export const Modal: React.FC<ModalProps> = ({
         aria-hidden="true"
       />
 
-      {/* Modal Dialog: Native iOS Bottom Sheet on Mobile (<640px), Floating Card on Tablet/Desktop */}
+      {/* Modal Dialog: Center-card for sm confirm dialogs on all viewports, Bottom Sheet on Mobile for forms */}
       <div
         className={cn(
-          'relative w-full rounded-t-3xl sm:rounded-2xl bg-white p-5 sm:p-6 shadow-2xl dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-800/90 z-10 animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200 max-h-[90dvh] sm:max-h-[85vh] flex flex-col',
+          'relative w-full bg-white p-5 sm:p-6 shadow-2xl dark:bg-slate-900 z-10 duration-200 max-h-[90dvh] sm:max-h-[85vh] flex flex-col',
+          isSmallConfirm
+            ? 'rounded-3xl border border-slate-200/80 dark:border-slate-800/90 animate-in zoom-in-95'
+            : 'rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200/80 dark:border-slate-800/90 animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:zoom-in-95',
           maxWidths[maxWidth]
         )}
       >
-        {/* Mobile Drag Indicator Bar */}
-        <div className="sm:hidden mx-auto -mt-1.5 mb-3.5 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
+        {/* Mobile Drag Indicator Bar (for bottom sheets only) */}
+        {!isSmallConfirm && (
+          <div className="sm:hidden mx-auto -mt-1.5 mb-3.5 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
+        )}
 
         <div className="flex items-start justify-between pb-3.5 sm:pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="pr-4">
@@ -87,5 +100,9 @@ export const Modal: React.FC<ModalProps> = ({
       </div>
     </div>
   );
-};
 
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
+};

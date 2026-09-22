@@ -22,6 +22,7 @@ import {
   EyeOff,
   Sun,
   Moon,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -61,6 +62,9 @@ export const DashboardPage: React.FC = () => {
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
   const [selectedTxForDetail, setSelectedTxForDetail] = useState<Transaction | null>(null);
   const [editingTxForSheet, setEditingTxForSheet] = useState<Transaction | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(
+    null
+  );
 
   // Consolidated financial intelligence (computed in a single pass)
   const {
@@ -1104,12 +1108,53 @@ export const DashboardPage: React.FC = () => {
           setEditingTxForSheet(tx);
           setIsMobileSheetOpen(true);
         }}
-        onDelete={async (tx) => {
-          await deleteTransaction(tx.id);
-          showToast('ลบรายการสำเร็จ', `รายการ "${tx.description}" ถูกลบเรียบร้อยแล้ว`);
+        onDelete={(tx) => {
           setSelectedTxForDetail(null);
+          setDeleteTarget({ id: tx.id, description: tx.description });
         }}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        title="ยืนยันการลบรายการ"
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-xl bg-rose-50 p-3 text-xs text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-rose-600" />
+            <div>
+              <p className="font-semibold">
+                คุณแน่ใจหรือไม่ว่าต้องการลบรายการ "{deleteTarget?.description}"?
+              </p>
+              <p className="mt-1 text-[11px]">
+                การลบรายการนี้จะไม่สามารถกู้คืนได้ และยอดเงินรวมจะถูกคำนวณคืนให้อัตโนมัติ
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              ยกเลิก
+            </Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                if (!deleteTarget) return;
+                await deleteTransaction(deleteTarget.id);
+                showToast(
+                  'ลบรายการสำเร็จ',
+                  `รายการ "${deleteTarget.description}" ถูกลบเรียบร้อยแล้ว`
+                );
+                setDeleteTarget(null);
+              }}
+            >
+              ยืนยันการลบ
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Quick Transaction Bottom Sheet (Mobile - Matching Screenshot 2026-09-22 200228.png) */}
       <QuickTransactionSheet
