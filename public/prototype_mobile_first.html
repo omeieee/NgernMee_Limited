@@ -1334,28 +1334,30 @@
 
         <!-- MOBILE FLOATING BOTTOM TAB BAR                       -->
         <!-- ==================================================== -->
-        <div class="fixed sm:absolute bottom-0 left-0 right-0 z-40 theme-canvas bg-opacity-95 backdrop-blur-2xl border-t border-slate-200/80 dark:border-white/[0.08] px-4 py-2 flex items-center justify-around shadow-modern-nav">
-          <button onclick="switchAppTab('home')" id="tab-btn-home" class="smooth-tap flex flex-col items-center py-1 theme-accent-text transition-all">
+        <div class="fixed sm:absolute bottom-0 left-0 right-0 z-40 theme-canvas bg-opacity-95 backdrop-blur-2xl border-t border-slate-200/80 dark:border-white/[0.08] px-1 py-2 grid grid-cols-5 items-center shadow-modern-nav">
+          <button onclick="switchAppTab('home')" id="tab-btn-home" class="smooth-tap flex flex-col items-center justify-center py-1 theme-accent-text transition-all w-full">
             <i data-lucide="layout-grid" class="w-5 h-5"></i>
-            <span class="text-[10px] font-bold mt-0.5">ภาพรวม</span>
+            <span class="text-[10px] font-bold mt-0.5 whitespace-nowrap">ภาพรวม</span>
           </button>
-          <button onclick="switchAppTab('ledger')" id="tab-btn-ledger" class="smooth-tap flex flex-col items-center py-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all">
+          <button onclick="switchAppTab('ledger')" id="tab-btn-ledger" class="smooth-tap flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all w-full">
             <i data-lucide="receipt" class="w-5 h-5"></i>
-            <span class="text-[10px] mt-0.5 font-medium">สมุดบัญชี</span>
+            <span class="text-[10px] mt-0.5 font-medium whitespace-nowrap">สมุดบัญชี</span>
           </button>
           
           <!-- Tactile Green Plus CTA Button (Styles 03 Neomorphic & Style 05 Glow) -->
-          <button onclick="handleCtaPlusClick()" id="cta-plus-btn" class="neo-btn smooth-tap -mt-5 w-12 h-12 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black flex items-center justify-center glow-brand transition-all shadow-lg border border-white/20" title="บันทึกรายการทันที">
-            <i data-lucide="plus" id="cta-plus-icon" class="w-6 h-6 stroke-[3] transition-transform duration-200"></i>
-          </button>
+          <div class="flex items-center justify-center w-full">
+            <button onclick="handleCtaPlusClick()" id="cta-plus-btn" class="neo-btn smooth-tap -mt-5 w-12 h-12 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black flex items-center justify-center glow-brand transition-all shadow-lg border border-white/20 cursor-pointer" title="บันทึกรายการทันที">
+              <i data-lucide="plus" id="cta-plus-icon" class="w-6 h-6 stroke-[3] transition-transform duration-200"></i>
+            </button>
+          </div>
 
-          <button onclick="switchAppTab('reports')" id="tab-btn-reports" class="smooth-tap flex flex-col items-center py-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all">
+          <button onclick="switchAppTab('reports')" id="tab-btn-reports" class="smooth-tap flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all w-full">
             <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
-            <span class="text-[10px] mt-0.5 font-medium">รายงาน</span>
+            <span class="text-[10px] mt-0.5 font-medium whitespace-nowrap">รายงาน</span>
           </button>
-          <button onclick="switchAppTab('settings')" id="tab-btn-settings" class="smooth-tap flex flex-col items-center py-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all">
+          <button onclick="switchAppTab('settings')" id="tab-btn-settings" class="smooth-tap flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all w-full">
             <i data-lucide="settings" class="w-5 h-5"></i>
-            <span class="text-[10px] mt-0.5 font-medium">ตั้งค่า</span>
+            <span class="text-[10px] mt-0.5 font-medium whitespace-nowrap">ตั้งค่า</span>
           </button>
         </div>
       </div>
