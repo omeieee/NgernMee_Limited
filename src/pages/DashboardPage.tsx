@@ -208,7 +208,7 @@ export const DashboardPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsBalanceHidden(!isBalanceHidden)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer smooth-tap active:scale-90"
                   title={isBalanceHidden ? 'แสดงยอดเงิน' : 'ซ่อนยอดเงิน'}
                 >
                   {isBalanceHidden ? (
@@ -222,7 +222,10 @@ export const DashboardPage: React.FC = () => {
                 <span className="text-2xl sm:text-3xl font-extrabold text-slate-400 dark:text-slate-500">
                   ฿
                 </span>
-                <span className="text-3xl sm:text-4xl font-extrabold tracking-tight num-tabular text-slate-900 dark:text-white drop-shadow-xs whitespace-nowrap">
+                <span
+                  key={String(runway.currentLiquidBalance) + String(isBalanceHidden)}
+                  className="text-3xl sm:text-4xl font-extrabold tracking-tight num-tabular text-slate-900 dark:text-white drop-shadow-xs whitespace-nowrap pulse-num"
+                >
                   {isBalanceHidden
                     ? '••••••'
                     : formatCurrency(runway.currentLiquidBalance, true).replace('฿', '').trim()}
@@ -258,15 +261,17 @@ export const DashboardPage: React.FC = () => {
                 งบปลอดภัยวันนี้
               </span>
               <span className="theme-accent-text font-extrabold text-base num-tabular mt-0.5 block whitespace-nowrap">
-                {formatCurrency(runway.safeDailySpend, true)}
+                ฿{formatCurrency(runway.safeDailySpend, true).replace('฿', '')}
               </span>
-              <span className="text-[10px] text-slate-400 whitespace-nowrap">เฉลี่ยต่อวัน</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                เฉลี่ย {runway.runwayDays} วันที่เหลือ
+              </span>
             </div>
             <div className="bg-slate-50/90 dark:bg-black/30 backdrop-blur-md rounded-2xl p-3 border border-slate-200/80 dark:border-white/[0.06]">
               <span className="text-slate-500 dark:text-slate-400 text-[11px] block font-medium whitespace-nowrap">
-                รายจ่ายสุทธิเดือนนี้
+                รายจ่ายเดือนนี้
               </span>
-              <span className="theme-expense-text font-extrabold text-base num-tabular mt-0.5 block whitespace-nowrap">
+              <span className="text-slate-900 dark:text-white font-extrabold text-base num-tabular mt-0.5 block whitespace-nowrap">
                 {formatCurrency(monthExpense, true)}
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
@@ -281,9 +286,9 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => openMobileSheet('expense')}
-            className="neo-btn touch-btn flex items-center gap-3 p-3.5 rounded-2xl theme-surface border neo-card hover:glow-expense transition-all group cursor-pointer"
+            className="neo-btn touch-btn flex items-center gap-3 p-3.5 rounded-2xl theme-surface border neo-card hover:glow-expense transition-all group cursor-pointer active:scale-95"
           >
-            <div className="w-11 h-11 rounded-xl bg-rose-500/10 theme-expense-text border border-rose-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-rose-500/10 theme-expense-text border border-rose-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-active:scale-95 transition-transform">
               <ArrowDownRight className="w-5 h-5" />
             </div>
             <div className="text-left min-w-0">
@@ -299,9 +304,9 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => openMobileSheet('income')}
-            className="neo-btn touch-btn flex items-center gap-3 p-3.5 rounded-2xl theme-surface border neo-card hover:glow-brand transition-all group cursor-pointer"
+            className="neo-btn touch-btn flex items-center gap-3 p-3.5 rounded-2xl theme-surface border neo-card hover:glow-brand transition-all group cursor-pointer active:scale-95"
           >
-            <div className="w-11 h-11 rounded-xl theme-badge flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform border">
+            <div className="w-11 h-11 rounded-xl theme-badge flex items-center justify-center shrink-0 group-hover:scale-105 group-active:scale-95 transition-transform border">
               <ArrowUpRight className="w-5 h-5" />
             </div>
             <div className="text-left min-w-0">

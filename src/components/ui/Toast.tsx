@@ -16,10 +16,10 @@ export const Toast: React.FC = () => {
     <div
       id="toast-success"
       className={cn(
-        'fixed top-5 left-4 right-4 max-w-sm mx-auto z-[9999] transition-all duration-300 transform pointer-events-none',
+        'fixed top-5 left-4 right-4 max-w-sm mx-auto z-[9999] toast-spring transform pointer-events-none',
         isOpen
           ? 'translate-y-0 opacity-100 pointer-events-auto'
-          : '-translate-y-4 opacity-0 pointer-events-none'
+          : '-translate-y-6 opacity-0 pointer-events-none'
       )}
       role="status"
       aria-live="polite"

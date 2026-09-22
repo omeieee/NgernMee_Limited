@@ -84,6 +84,25 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      const frame = requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+      return () => cancelAnimationFrame(frame);
+    } else {
+      setIsVisible(false);
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 280);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   // Sync state on open or editingTransaction change
   useEffect(() => {
     if (isOpen) {
@@ -210,19 +229,27 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:hidden animate-in fade-in duration-200">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:hidden">
+      {/* Backdrop with Smooth Fade */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
+        className={cn(
+          'fixed inset-0 bg-black/70 backdrop-blur-xs sheet-backdrop',
+          isVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        )}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Bottom Sheet Card with Smooth Slide-Up Animation */}
-      <div className="relative w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-[#16181f] border-t border-slate-200/80 dark:border-white/10 p-5 shadow-2xl z-10 space-y-3.5 touch-scroll pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] animate-sheet-up">
+      {/* Bottom Sheet Card with Smooth Spring Slide Up/Down */}
+      <div
+        className={cn(
+          'relative w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-[#16181f] border-t border-slate-200/80 dark:border-white/10 p-5 shadow-2xl z-10 space-y-3.5 touch-scroll pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] sheet-panel transform',
+          isVisible ? 'translate-y-0' : 'translate-y-full'
+        )}
+      >
         {/* Pull Handle */}
         <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-2" />
 
@@ -248,8 +275,16 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
           </button>
         </div>
 
-        {/* Segmented Tab: Expense vs Income */}
-        <div className="tab-slider-track bg-slate-100 dark:bg-black/50 rounded-2xl p-1 text-xs font-semibold border border-slate-200/80 dark:border-white/[0.06] grid grid-cols-2 gap-1 relative">
+        {/* Segmented Tab: Expense vs Income with Smooth Spring Sliding Pill (Style Guide 5.4) */}
+        <div className="tab-slider-track bg-slate-100 dark:bg-black/50 rounded-2xl text-xs font-semibold border border-slate-200/80 dark:border-white/[0.06] relative">
+          {/* Animated Sliding Capsule Thumb */}
+          <div
+            className="tab-slider-thumb bg-white dark:bg-white/10 shadow-sm border border-slate-200/60 dark:border-white/10"
+            style={{
+              transform: type === 'income' ? 'translateX(100%)' : 'translateX(0%)',
+            }}
+          />
+
           <button
             type="button"
             onClick={() => {
@@ -258,10 +293,10 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
               setCategoryId(def?.id || null);
             }}
             className={cn(
-              'smooth-tap py-2.5 rounded-xl z-10 flex items-center justify-center gap-1.5 font-bold transition-all cursor-pointer',
+              'smooth-tap py-2.5 rounded-xl z-10 flex items-center justify-center gap-1.5 font-bold transition-colors cursor-pointer',
               type === 'expense'
-                ? 'bg-white dark:bg-white/10 text-rose-600 dark:text-rose-400 shadow-sm border border-slate-200/60 dark:border-white/10'
-                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                ? 'theme-expense-text font-bold'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-medium'
             )}
           >
             <ArrowDownRight className="w-3.5 h-3.5 text-rose-500" />
@@ -275,10 +310,10 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
               setCategoryId(def?.id || null);
             }}
             className={cn(
-              'smooth-tap py-2.5 rounded-xl z-10 flex items-center justify-center gap-1.5 font-bold transition-all cursor-pointer',
+              'smooth-tap py-2.5 rounded-xl z-10 flex items-center justify-center gap-1.5 font-bold transition-colors cursor-pointer',
               type === 'income'
-                ? 'bg-white dark:bg-white/10 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-white/10'
-                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                ? 'theme-accent-text font-bold'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-medium'
             )}
           >
             <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />

@@ -66,13 +66,16 @@ export const BottomNav: React.FC = () => {
           type="button"
           onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
           aria-label={isQuickAddOpen ? 'ปิดหน้าต่างบันทึกรายการ' : 'บันทึกรายการด่วน'}
-          className="neo-btn smooth-tap -mt-5 w-12 h-12 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black flex items-center justify-center glow-brand transition-all shadow-lg border border-white/20 cursor-pointer z-50 active:scale-95"
+          className="neo-btn smooth-tap -mt-5 w-12 h-12 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black flex items-center justify-center glow-brand transition-all shadow-lg border border-white/20 cursor-pointer z-50 active:scale-90"
         >
           <Plus
             className={cn(
-              'w-6 h-6 stroke-[3] transition-transform duration-200',
+              'w-6 h-6 stroke-[3] transition-transform duration-250',
               isQuickAddOpen && 'rotate-45'
             )}
+            style={{
+              transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}
           />
         </button>
 

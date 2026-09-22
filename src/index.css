@@ -505,6 +505,58 @@ html:not(.dark) .theme-expense-text {
   animation: sheetSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Quick Add Sliding Tab Track & Thumb (Style Guide 5.4) */
+.tab-slider-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  border-radius: 16px;
+  user-select: none;
+}
+.tab-slider-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 12px;
+  transition:
+    transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Fluid Mobile Sheet Transitions */
+.sheet-backdrop {
+  transition: opacity 0.25s ease-out;
+}
+.sheet-panel {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* Fluid Modal Transitions with Spring */
+.modal-backdrop {
+  transition: opacity 0.22s ease-out;
+}
+.modal-panel {
+  transition:
+    transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.2s ease;
+  will-change: transform, opacity;
+}
+
+/* Toast Micro-Interaction Spring */
+.toast-spring {
+  transition:
+    transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.24s ease;
+  will-change: transform, opacity;
+}
+
 /* Number Counter Spring Pulse */
 @keyframes numPulse {
   0% {

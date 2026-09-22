@@ -259,7 +259,7 @@ export const TransactionsPage: React.FC = () => {
                         <div
                           key={tx.id}
                           onClick={() => setSelectedTxForDetail(tx)}
-                          className="p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors cursor-pointer touch-manipulation active:scale-[0.99]"
+                          className="p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all cursor-pointer touch-btn active:scale-[0.98]"
                         >
                           {/* Left Info */}
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -336,7 +336,7 @@ export const TransactionsPage: React.FC = () => {
                                   setEditingTxForSheet(tx);
                                   setIsMobileSheetOpen(true);
                                 }}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors cursor-pointer smooth-tap active:scale-90"
                                 title="แก้ไขรายการ"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -347,7 +347,7 @@ export const TransactionsPage: React.FC = () => {
                                   e.stopPropagation();
                                   setDeleteTarget({ id: tx.id, description: tx.description });
                                 }}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer smooth-tap active:scale-90"
                                 title="ลบรายการ"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
