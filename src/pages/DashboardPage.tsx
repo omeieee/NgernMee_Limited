@@ -216,12 +216,14 @@ export const DashboardPage: React.FC = () => {
                   )}
                 </button>
               </span>
-              <div className="mt-1 flex items-baseline gap-1">
-                <span className="text-sm font-light text-slate-500 dark:text-slate-400">฿</span>
-                <span className="text-3xl sm:text-4xl font-extrabold tracking-tight num-tabular text-slate-900 dark:text-white drop-shadow-xs">
+              <div className="mt-1 flex items-baseline gap-1.5 whitespace-nowrap">
+                <span className="text-2xl sm:text-3xl font-extrabold text-slate-400 dark:text-slate-500">
+                  ฿
+                </span>
+                <span className="text-3xl sm:text-4xl font-extrabold tracking-tight num-tabular text-slate-900 dark:text-white drop-shadow-xs whitespace-nowrap">
                   {isBalanceHidden
                     ? '••••••'
-                    : formatCurrency(runway.currentLiquidBalance).replace('฿', '').trim()}
+                    : formatCurrency(runway.currentLiquidBalance, true).replace('฿', '').trim()}
                 </span>
               </div>
             </div>
@@ -230,7 +232,7 @@ export const DashboardPage: React.FC = () => {
             <div className="text-right">
               <span
                 className={cn(
-                  'inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full theme-badge border transition-colors',
+                  'inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full theme-badge border transition-colors whitespace-nowrap',
                   runway.runwayMonths >= 3
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                     : runway.runwayMonths >= 1
@@ -241,7 +243,7 @@ export const DashboardPage: React.FC = () => {
                 <ShieldCheck className="w-3 h-3" />
                 <span>อยู่ได้ {runway.runwayMonths} เดือน</span>
               </span>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-mono font-medium">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-mono font-medium whitespace-nowrap">
                 สำรอง {runway.runwayDays} วัน
               </p>
             </div>
@@ -250,23 +252,23 @@ export const DashboardPage: React.FC = () => {
           {/* Daily Radar: Safe-to-spend allowance & Net Monthly Expense */}
           <div className="mt-5 pt-4 border-t border-slate-200/80 dark:border-white/[0.08] grid grid-cols-2 gap-2.5 relative z-10 text-xs">
             <div className="bg-slate-50/90 dark:bg-black/30 backdrop-blur-md rounded-2xl p-3 border border-slate-200/80 dark:border-white/[0.06]">
-              <span className="text-slate-500 dark:text-slate-400 text-[11px] block font-medium">
+              <span className="text-slate-500 dark:text-slate-400 text-[11px] block font-medium whitespace-nowrap">
                 งบปลอดภัยวันนี้
               </span>
-              <span className="theme-accent-text font-extrabold text-base num-tabular mt-0.5 block">
-                {formatCurrency(runway.safeDailySpend)}
+              <span className="theme-accent-text font-extrabold text-base num-tabular mt-0.5 block whitespace-nowrap">
+                {formatCurrency(runway.safeDailySpend, true)}
               </span>
-              <span className="text-[10px] text-slate-400">เฉลี่ยต่อวัน</span>
+              <span className="text-[10px] text-slate-400 whitespace-nowrap">เฉลี่ยต่อวัน</span>
             </div>
             <div className="bg-slate-50/90 dark:bg-black/30 backdrop-blur-md rounded-2xl p-3 border border-slate-200/80 dark:border-white/[0.06]">
-              <span className="text-slate-500 dark:text-slate-400 text-[11px] block font-medium">
+              <span className="text-slate-500 dark:text-slate-400 text-[11px] block font-medium whitespace-nowrap">
                 รายจ่ายสุทธิเดือนนี้
               </span>
-              <span className="theme-expense-text font-extrabold text-base num-tabular mt-0.5 block">
-                {formatCurrency(monthExpense)}
+              <span className="theme-expense-text font-extrabold text-base num-tabular mt-0.5 block whitespace-nowrap">
+                {formatCurrency(monthExpense, true)}
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                วันนี้: -{formatCurrency(todayExpense)}
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                วันนี้: -{formatCurrency(todayExpense, true)}
               </span>
             </div>
           </div>
@@ -413,12 +415,17 @@ export const DashboardPage: React.FC = () => {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white shadow-2xs"
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
                         style={{
-                          backgroundColor: category?.color || (isExpense ? '#f43f5e' : '#10b981'),
+                          backgroundColor: `${category?.color || (isExpense ? '#f43f5e' : '#10b981')}1a`,
+                          border: `1px solid ${category?.color || (isExpense ? '#f43f5e' : '#10b981')}33`,
+                          color: category?.color || (isExpense ? '#f43f5e' : '#10b981'),
                         }}
                       >
-                        <CategoryIcon name={category?.icon} className="w-5 h-5" />
+                        <CategoryIcon
+                          name={category?.icon || (isExpense ? 'receipt' : 'arrow-up-right')}
+                          className="w-5 h-5"
+                        />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -454,19 +461,19 @@ export const DashboardPage: React.FC = () => {
                     <div className="text-right shrink-0">
                       <span
                         className={cn(
-                          'text-xs font-bold num-tabular block',
+                          'text-xs font-bold num-tabular block whitespace-nowrap',
                           isExpense ? 'text-slate-900 dark:text-white' : 'theme-accent-text'
                         )}
                       >
                         {isExpense ? '-' : '+'}
-                        {formatCurrency(tx.net_amount)}
+                        {formatCurrency(tx.net_amount, true)}
                       </span>
                       {tx.is_thai_chuay_thai ? (
-                        <span className="text-[10px] text-blue-600 dark:text-blue-400 block">
+                        <span className="text-[10px] text-blue-600 dark:text-blue-400 block whitespace-nowrap">
                           รัฐช่วย ฿{tx.thai_chuay_thai_discount.toFixed(0)}
                         </span>
                       ) : (
-                        <span className="text-[10px] text-slate-400 block">
+                        <span className="text-[10px] text-slate-400 block whitespace-nowrap">
                           {isExpense ? 'จ่ายเต็ม' : 'รับสุทธิ'}
                         </span>
                       )}
@@ -502,12 +509,17 @@ export const DashboardPage: React.FC = () => {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white shadow-2xs"
+                          className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
                           style={{
-                            backgroundColor: category?.color || (isExpense ? '#f43f5e' : '#10b981'),
+                            backgroundColor: `${category?.color || (isExpense ? '#f43f5e' : '#10b981')}1a`,
+                            border: `1px solid ${category?.color || (isExpense ? '#f43f5e' : '#10b981')}33`,
+                            color: category?.color || (isExpense ? '#f43f5e' : '#10b981'),
                           }}
                         >
-                          <CategoryIcon name={category?.icon} className="w-5 h-5" />
+                          <CategoryIcon
+                            name={category?.icon || (isExpense ? 'receipt' : 'arrow-up-right')}
+                            className="w-5 h-5"
+                          />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -529,14 +541,14 @@ export const DashboardPage: React.FC = () => {
                       <div className="text-right shrink-0">
                         <span
                           className={cn(
-                            'text-xs font-bold num-tabular block',
+                            'text-xs font-bold num-tabular block whitespace-nowrap',
                             isExpense ? 'text-slate-900 dark:text-white' : 'theme-accent-text'
                           )}
                         >
                           {isExpense ? '-' : '+'}
-                          {formatCurrency(tx.net_amount)}
+                          {formatCurrency(tx.net_amount, true)}
                         </span>
-                        <span className="text-[10px] text-slate-400 block">
+                        <span className="text-[10px] text-slate-400 block whitespace-nowrap">
                           {tx.is_thai_chuay_thai
                             ? `รัฐช่วย ฿${tx.thai_chuay_thai_discount.toFixed(0)}`
                             : isExpense

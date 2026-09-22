@@ -105,7 +105,7 @@ export const AppShell: React.FC = () => {
               </button>
 
               <div className="hidden sm:flex lg:hidden h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
-                <Coins className="h-4 w-4" />
+                <Wallet className="h-4 w-4" />
               </div>
 
               <div className="min-w-0">
@@ -154,8 +154,11 @@ export const AppShell: React.FC = () => {
           </div>
         </header>
 
-        {/* Dynamic Page Content */}
-        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-8 lg:pb-12 max-w-7xl w-full mx-auto animate-in fade-in duration-200">
+        {/* Dynamic Page Content with View Entrance Animation */}
+        <main
+          key={location.pathname}
+          className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-8 lg:pb-12 max-w-7xl w-full mx-auto animate-view"
+        >
           <Outlet />
         </main>
       </div>

@@ -302,20 +302,20 @@ export const TransactionsPage: React.FC = () => {
                             <div className="text-right">
                               <span
                                 className={cn(
-                                  'text-xs font-bold num-tabular block',
+                                  'text-xs font-bold num-tabular block whitespace-nowrap',
                                   isExpense ? 'text-slate-900 dark:text-white' : 'theme-accent-text'
                                 )}
                               >
                                 {isExpense ? '-' : '+'}
-                                {formatCurrency(tx.net_amount)}
+                                {formatCurrency(tx.net_amount, true)}
                               </span>
                               {tx.is_thai_chuay_thai && tx.amount !== tx.net_amount && (
-                                <span className="text-[9px] text-slate-400 line-through num-tabular block">
-                                  {formatCurrency(tx.amount)}
+                                <span className="text-[9px] text-slate-400 line-through num-tabular block whitespace-nowrap">
+                                  {formatCurrency(tx.amount, true)}
                                 </span>
                               )}
                               {tx.withholding_tax_amount && tx.withholding_tax_amount > 0 && (
-                                <span className="text-[9px] text-indigo-500 num-tabular block">
+                                <span className="text-[9px] text-indigo-500 num-tabular block whitespace-nowrap">
                                   หัก {formatCurrency(tx.withholding_tax_amount)}
                                 </span>
                               )}

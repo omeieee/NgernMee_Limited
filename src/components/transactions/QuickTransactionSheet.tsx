@@ -294,7 +294,7 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 dark:bg-black/40 border border-slate-200/80 dark:border-white/[0.08] rounded-xl text-3xl font-black text-slate-900 dark:text-white num-tabular focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 dark:bg-black/40 border border-slate-200/80 dark:border-white/[0.08] rounded-xl text-3xl font-black text-slate-900 dark:text-white num-tabular whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
               />
             </div>
             {errors.amount && <p className="text-[11px] text-rose-500">{errors.amount}</p>}
@@ -306,7 +306,7 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
                   key={preset}
                   type="button"
                   onClick={() => setAmount(String(preset))}
-                  className="smooth-tap neo-btn px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 text-xs font-bold num-tabular border border-slate-200/70 dark:border-white/[0.08] active:scale-95 transition-all cursor-pointer shrink-0"
+                  className="smooth-tap neo-btn px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 text-xs font-bold num-tabular whitespace-nowrap border border-slate-200/70 dark:border-white/[0.08] active:scale-95 transition-all cursor-pointer shrink-0"
                 >
                   ฿{preset}
                 </button>
@@ -563,9 +563,11 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
               </label>
 
               {isCopay && numAmount > 0 && quota.effectiveDiscount > 0 && (
-                <div className="mt-2 p-2 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-[11px] flex justify-between items-center text-blue-800 dark:text-blue-300 font-medium">
-                  <span>รัฐช่วย ฿{quota.effectiveDiscount.toFixed(2)}</span>
-                  <span className="font-bold theme-accent-text">
+                <div className="mt-2 p-2.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-[11px] flex justify-between items-center text-blue-800 dark:text-blue-300 font-medium whitespace-nowrap">
+                  <span className="whitespace-nowrap">
+                    รัฐช่วย ฿{quota.effectiveDiscount.toFixed(2)}
+                  </span>
+                  <span className="font-bold theme-accent-text num-tabular whitespace-nowrap">
                     จ่ายจริง ฿{quota.effectiveNet.toFixed(2)}
                   </span>
                 </div>
@@ -645,7 +647,7 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
                     ))}
                   </div>
                   {numAmount > 0 && (
-                    <span className="text-[11px] text-indigo-500 font-mono font-bold">
+                    <span className="text-[11px] text-indigo-500 font-bold num-tabular whitespace-nowrap">
                       หัก ฿{(numAmount * (whtRate / 100)).toFixed(2)}
                     </span>
                   )}

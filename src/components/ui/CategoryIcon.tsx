@@ -29,6 +29,18 @@ import {
   Circle,
   Navigation,
   PartyPopper,
+  Receipt,
+  ArrowUpRight,
+  ArrowDownRight,
+  Wallet,
+  Coins,
+  Tag,
+  CreditCard,
+  Sparkles,
+  Calculator,
+  BarChart3,
+  LayoutGrid,
+  Settings,
   type LucideProps,
 } from 'lucide-react';
 
@@ -59,13 +71,26 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   navigation: Navigation,
   'party-popper': PartyPopper,
   circle: Circle,
+  receipt: Receipt,
+  'arrow-up-right': ArrowUpRight,
+  'arrow-down-right': ArrowDownRight,
+  wallet: Wallet,
+  coins: Coins,
+  tag: Tag,
+  'credit-card': CreditCard,
+  sparkles: Sparkles,
+  calculator: Calculator,
+  'bar-chart-3': BarChart3,
+  'layout-grid': LayoutGrid,
+  settings: Settings,
 };
 
 interface CategoryIconProps extends Omit<LucideProps, 'name'> {
   name: string | null | undefined;
+  fallback?: React.FC<LucideProps>;
 }
 
-export const CategoryIcon: React.FC<CategoryIconProps> = ({ name, ...props }) => {
-  const IconComponent = (name && ICON_MAP[name]) ? ICON_MAP[name] : Circle;
+export const CategoryIcon: React.FC<CategoryIconProps> = ({ name, fallback = Tag, ...props }) => {
+  const IconComponent = name && ICON_MAP[name] ? ICON_MAP[name] : fallback;
   return <IconComponent {...props} />;
 };

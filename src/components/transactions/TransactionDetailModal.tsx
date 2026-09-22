@@ -65,14 +65,14 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             </h3>
             <span
               className={cn(
-                'text-2xl font-black num-tabular block mt-1',
+                'text-2xl font-black num-tabular block mt-1 whitespace-nowrap',
                 isExpense ? 'text-slate-900 dark:text-white' : 'theme-accent-text'
               )}
             >
               {isExpense ? '-' : '+'}
-              {formatCurrency(transaction.net_amount)}
+              {formatCurrency(transaction.net_amount, true)}
             </span>
-            <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full mt-2 theme-badge border">
+            <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full mt-2 theme-badge border whitespace-nowrap">
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
                 style={{ backgroundColor: catColor }}
@@ -101,20 +101,20 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               <>
                 <div className="flex justify-between text-slate-500 dark:text-slate-400">
                   <span>ราคาสินค้า:</span>
-                  <span className="font-medium num-tabular">
-                    {formatCurrency(transaction.amount)}
+                  <span className="font-medium num-tabular whitespace-nowrap">
+                    {formatCurrency(transaction.amount, true)}
                   </span>
                 </div>
                 <div className="flex justify-between text-blue-500">
                   <span>รัฐช่วยจ่าย (60%):</span>
-                  <span className="font-bold num-tabular">
-                    -{formatCurrency(transaction.thai_chuay_thai_discount)}
+                  <span className="font-bold num-tabular whitespace-nowrap">
+                    -{formatCurrency(transaction.thai_chuay_thai_discount, true)}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-900 dark:text-white font-bold pt-1 border-t border-slate-200/60 dark:border-white/[0.06]">
                   <span>คุณจ่ายจริง (40%):</span>
-                  <span className="theme-accent-text num-tabular">
-                    {formatCurrency(transaction.net_amount)}
+                  <span className="theme-accent-text num-tabular whitespace-nowrap">
+                    {formatCurrency(transaction.net_amount, true)}
                   </span>
                 </div>
               </>
@@ -124,20 +124,20 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               <>
                 <div className="flex justify-between text-slate-500 dark:text-slate-400">
                   <span>ยอดเงินได้:</span>
-                  <span className="font-medium num-tabular">
-                    {formatCurrency(transaction.amount)}
+                  <span className="font-medium num-tabular whitespace-nowrap">
+                    {formatCurrency(transaction.amount, true)}
                   </span>
                 </div>
                 <div className="flex justify-between text-indigo-500">
                   <span>ภาษีหัก ณ ที่จ่ายสะสม (ภ.ง.ด.91):</span>
-                  <span className="font-bold num-tabular">
-                    -{formatCurrency(transaction.withholding_tax_amount)}
+                  <span className="font-bold num-tabular whitespace-nowrap">
+                    -{formatCurrency(transaction.withholding_tax_amount, true)}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-900 dark:text-white font-bold pt-1 border-t border-slate-200/60 dark:border-white/[0.06]">
                   <span>รับสุทธิ:</span>
-                  <span className="theme-accent-text num-tabular">
-                    {formatCurrency(transaction.net_amount)}
+                  <span className="theme-accent-text num-tabular whitespace-nowrap">
+                    {formatCurrency(transaction.net_amount, true)}
                   </span>
                 </div>
               </>
