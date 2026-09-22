@@ -1,10 +1,29 @@
-import type { IncomeType, TransactionType } from '../../../lib/types';
+import type {
+  IncomeType,
+  ThaiChuayThaiQuota,
+  Transaction,
+  TransactionType,
+} from '../../../lib/types';
+import { calculateDiscount, getDailyUsage, getMonthlyUsage, getRemainingQuota } from './copay';
+import { validateTransactionDraft } from './schema';
 import type {
   DraftAmountsCalculation,
   TransactionDraftInput,
   TransactionPayload,
   DescriptionSuggestion,
 } from './types';
+
+export interface BuildPayloadOptions {
+  effectiveDiscount?: number;
+  ledger?: Transaction[];
+}
+
+export interface IntakeTransactionResult {
+  success: boolean;
+  payload?: TransactionPayload;
+  errors?: Record<string, string>;
+  copayStatus?: ThaiChuayThaiQuota;
+}
 
 export interface DraftCalculationOptions {
   type: TransactionType;
@@ -74,11 +93,12 @@ export function calculateDraftAmounts(opts: DraftCalculationOptions): DraftAmoun
 }
 
 /**
- * Transforms form draft input into a complete TransactionPayload ready for storage
+ * Transforms form draft input into a complete TransactionPayload ready for storage.
+ * If options.effectiveDiscount is omitted, automatically computes it from options.ledger.
  */
 export function buildTransactionPayload(
   draft: TransactionDraftInput,
-  options?: { effectiveDiscount?: number }
+  options?: BuildPayloadOptions
 ): TransactionPayload {
   const numAmount = typeof draft.amount === 'number' ? draft.amount : parseFloat(draft.amount) || 0;
   const customWht = draft.custom_wht_amount
@@ -87,11 +107,24 @@ export function buildTransactionPayload(
       : parseFloat(draft.custom_wht_amount) || null
     : null;
 
+  let effectiveDiscount = options?.effectiveDiscount;
+  if (
+    effectiveDiscount === undefined &&
+    draft.type === 'expense' &&
+    draft.is_thai_chuay_thai &&
+    options?.ledger
+  ) {
+    const targetDate = draft.transaction_date || new Date().toISOString().slice(0, 10);
+    const dailyUsed = getDailyUsage(options.ledger, targetDate);
+    const monthlyUsed = getMonthlyUsage(options.ledger, targetDate);
+    effectiveDiscount = calculateDiscount(numAmount, dailyUsed, monthlyUsed).effectiveDiscount;
+  }
+
   const amounts = calculateDraftAmounts({
     type: draft.type,
     amount: numAmount,
     isThaiChuayThai: draft.is_thai_chuay_thai,
-    thaiChuayThaiDiscount: options?.effectiveDiscount ?? 0,
+    thaiChuayThaiDiscount: effectiveDiscount ?? 0,
     incomeType: draft.income_type,
     hasWht: draft.has_wht,
     whtRate: draft.wht_rate ?? 3,
@@ -115,6 +148,50 @@ export function buildTransactionPayload(
     withholding_tax_amount: draft.type === 'income' ? amounts.whtAmount : 0,
     is_thai_chuay_thai: draft.type === 'expense' ? Boolean(draft.is_thai_chuay_thai) : false,
     thai_chuay_thai_discount: amounts.discount,
+  };
+}
+
+/**
+ * Deep module entry point: Validates draft, computes Co-Pay quota and Section 40 tax,
+ * and produces ready-to-persist TransactionPayload in a single call.
+ */
+export function intakeTransaction(
+  draft: TransactionDraftInput,
+  options?: { ledger?: Transaction[] }
+): IntakeTransactionResult {
+  const validation = validateTransactionDraft(draft);
+  if (!validation.success) {
+    return {
+      success: false,
+      errors: validation.errors,
+    };
+  }
+
+  const numAmount = typeof draft.amount === 'number' ? draft.amount : parseFloat(draft.amount) || 0;
+  const ledger = options?.ledger || [];
+  let copayStatus: ThaiChuayThaiQuota | undefined;
+  let effectiveDiscount: number | undefined;
+
+  if (draft.type === 'expense' && draft.is_thai_chuay_thai) {
+    const targetDate = draft.transaction_date || new Date().toISOString().slice(0, 10);
+    const dailyUsed = getDailyUsage(ledger, targetDate);
+    const monthlyUsed = getMonthlyUsage(ledger, targetDate);
+    effectiveDiscount = calculateDiscount(numAmount, dailyUsed, monthlyUsed).effectiveDiscount;
+    copayStatus = getRemainingQuota(dailyUsed, monthlyUsed, numAmount);
+  }
+
+  const payload = buildTransactionPayload(
+    {
+      ...draft,
+      description: validation.data.description,
+    },
+    { effectiveDiscount, ledger }
+  );
+
+  return {
+    success: true,
+    payload,
+    copayStatus,
   };
 }
 

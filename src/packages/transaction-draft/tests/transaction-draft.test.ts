@@ -5,6 +5,8 @@ import {
   suggestTransactionMeta,
   validateTransactionDraft,
   extractDescriptionSuggestions,
+  intakeTransaction,
+  evaluateLedgerCoPayQuota,
 } from '../index';
 
 describe('Transaction Draft Deep Module', () => {
@@ -229,6 +231,105 @@ describe('Transaction Draft Deep Module', () => {
       expect(incomeSuggestions.length).toBe(1);
       expect(incomeSuggestions[0].description).toBe('เงินเดือน บ.ไทยจำกัด');
       expect(incomeSuggestions[0].categoryId).toBe('cat-salary');
+    });
+  });
+
+  describe('intakeTransaction (Deep Interface)', () => {
+    const mockLedger = [
+      {
+        id: 'tx-1',
+        user_id: 'user-1',
+        type: 'expense' as const,
+        amount: 200,
+        gross_amount: 200,
+        net_amount: 80,
+        description: 'มื้อเที่ยง',
+        category_id: null,
+        transaction_date: '2026-09-22',
+        is_salary: false,
+        is_thai_chuay_thai: true,
+        thai_chuay_thai_discount: 120,
+        created_at: '2026-09-22T12:00:00.000Z',
+        updated_at: '2026-09-22T12:00:00.000Z',
+      },
+    ];
+
+    it('validates and computes Co-Pay subsidy automatically from ledger context', () => {
+      // 100 THB expense with Co-Pay. Daily used = 120 THB. Daily remaining = 80 THB.
+      // 60% of 100 is 60 THB <= 80 THB. So effective discount is 60 THB, net is 40 THB.
+      const result = intakeTransaction(
+        {
+          type: 'expense',
+          amount: 100,
+          description: 'อาหารเย็น',
+          transaction_date: '2026-09-22',
+          is_thai_chuay_thai: true,
+        },
+        { ledger: mockLedger }
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.payload).toBeDefined();
+      expect(result.payload?.gross_amount).toBe(100);
+      expect(result.payload?.thai_chuay_thai_discount).toBe(60);
+      expect(result.payload?.net_amount).toBe(40);
+      expect(result.copayStatus?.dailyRemaining).toBe(80);
+    });
+
+    it('caps Co-Pay subsidy when daily cap (200 THB) is reached', () => {
+      // 200 THB expense with Co-Pay. Daily used = 120 THB. Daily remaining = 80 THB.
+      // 60% of 200 is 120 THB > 80 THB. Capped to 80 THB discount, net is 120 THB.
+      const result = intakeTransaction(
+        {
+          type: 'expense',
+          amount: 200,
+          description: 'บุฟเฟต์',
+          transaction_date: '2026-09-22',
+          is_thai_chuay_thai: true,
+        },
+        { ledger: mockLedger }
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.payload?.thai_chuay_thai_discount).toBe(80);
+      expect(result.payload?.net_amount).toBe(120);
+    });
+
+    it('handles income transactions with Section 40 withholding tax', () => {
+      const result = intakeTransaction({
+        type: 'income',
+        amount: 10000,
+        description: 'งานฟรีแลนซ์ออกแบบ',
+        transaction_date: '2026-09-22',
+        income_type: 'freelance_part_time',
+        has_wht: true,
+        wht_rate: 3,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.payload?.gross_amount).toBe(10000);
+      expect(result.payload?.withholding_tax_amount).toBe(300);
+      expect(result.payload?.net_amount).toBe(9700);
+      expect(result.payload?.is_salary).toBe(false);
+    });
+
+    it('rejects invalid drafts cleanly with errors', () => {
+      const result = intakeTransaction({
+        type: 'expense',
+        amount: -50,
+        transaction_date: '2026-09-22',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors?.amount).toBeDefined();
+    });
+
+    it('evaluates ledger quota status accurately via evaluateLedgerCoPayQuota', () => {
+      const status = evaluateLedgerCoPayQuota(mockLedger, '2026-09-22', 100);
+      expect(status.dailyUsed).toBe(120);
+      expect(status.dailyRemaining).toBe(80);
+      expect(status.effectiveDiscount).toBe(60);
+      expect(status.effectiveNet).toBe(40);
     });
   });
 });

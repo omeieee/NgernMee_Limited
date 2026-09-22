@@ -25,6 +25,7 @@ import type { Transaction, TransactionType, IncomeType } from '../../lib/types';
 import {
   calculateDraftAmounts,
   buildTransactionPayload,
+  intakeTransaction,
   validateTransactionDraft,
   suggestTransactionMeta,
   extractDescriptionSuggestions,
@@ -210,21 +211,24 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const validation = validateTransactionDraft({
-      type,
-      amount: numAmount,
-      description,
-      category_id: categoryId,
-      transaction_date: transactionDate,
-      is_thai_chuay_thai: isThaiChuayThai,
-      income_type: incomeType,
-      has_wht: hasWht,
-      wht_rate: whtRate,
-      custom_wht_amount: customWhtAmount ? parseFloat(customWhtAmount) || null : null,
-    });
+    const result = intakeTransaction(
+      {
+        type,
+        amount: numAmount,
+        description,
+        category_id: categoryId,
+        transaction_date: transactionDate,
+        is_thai_chuay_thai: isThaiChuayThai,
+        income_type: incomeType,
+        has_wht: hasWht,
+        wht_rate: whtRate,
+        custom_wht_amount: customWhtAmount ? parseFloat(customWhtAmount) || null : null,
+      },
+      { ledger: transactions }
+    );
 
-    if (!validation.success) {
-      setErrors(validation.errors);
+    if (!result.success || !result.payload) {
+      setErrors(result.errors || {});
       return;
     }
 
@@ -232,23 +236,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      const payload = buildTransactionPayload(
-        {
-          type,
-          amount: numAmount,
-          description: validation.data.description,
-          category_id: categoryId,
-          transaction_date: transactionDate,
-          is_thai_chuay_thai: isThaiChuayThai,
-          income_type: incomeType,
-          has_wht: hasWht,
-          wht_rate: whtRate,
-          custom_wht_amount: customWhtAmount ? parseFloat(customWhtAmount) || null : null,
-        },
-        { effectiveDiscount: thaiChuayThaiCalc.effectiveDiscount }
-      );
-
-      await onSubmit(payload);
+      await onSubmit(result.payload);
 
       // Clear form if not in edit mode
       if (!initialData?.id) {

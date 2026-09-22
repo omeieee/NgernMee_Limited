@@ -16,7 +16,8 @@ import {
   getDailyUsage,
   getMonthlyUsage,
   getRemainingQuota,
-} from '../lib/thaiChuayThai';
+  evaluateLedgerCoPayQuota,
+} from '../packages/transaction-draft';
 import { calculateTax, classifyAnnualIncome } from '../packages/tax-engine';
 import { generateId } from '../lib/utils';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
@@ -451,10 +452,7 @@ export const useAppStore = create<AppState>()(
 
       getThaiChuayThaiStatus: (dateStr?: string, pendingAmount: number = 0) => {
         const targetDate = dateStr || new Date().toISOString().slice(0, 10);
-        const { transactions } = get();
-        const dailyUsed = getDailyUsage(transactions, targetDate);
-        const monthlyUsed = getMonthlyUsage(transactions, targetDate);
-        return getRemainingQuota(dailyUsed, monthlyUsed, pendingAmount);
+        return evaluateLedgerCoPayQuota(get().transactions, targetDate, pendingAmount);
       },
 
       resetToDemoData: () => {
@@ -641,3 +639,24 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
+
+// Cross-tab and prototype sync listener via Storage Seam
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'ngernmee-storage' && event.newValue) {
+      try {
+        const parsed = JSON.parse(event.newValue);
+        if (parsed?.state?.transactions) {
+          useAppStore.setState((prev) => ({
+            ...prev,
+            transactions: parsed.state.transactions,
+            categories: parsed.state.categories || prev.categories,
+            theme: parsed.state.theme || prev.theme,
+          }));
+        }
+      } catch (e) {
+        console.warn('Storage sync error:', e);
+      }
+    }
+  });
+}

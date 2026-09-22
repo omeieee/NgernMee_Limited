@@ -34,12 +34,12 @@ export interface TransactionMetadata {
 }
 
 export type IncomeType =
-  | 'salary'              // มาตรา 40(1) เงินเดือนประจำ
+  | 'salary' // มาตรา 40(1) เงินเดือนประจำ
   | 'freelance_part_time' // มาตรา 40(2) งานพาร์ทไทม์ / ฟรีแลนซ์ / รับจ้างทำของ
-  | 'allowance'           // ค่าขนม / เงินสนับสนุนจากครอบครัว (ได้รับการยกเว้นภาษี)
-  | 'scholarship'         // ทุนการศึกษา / เงินรางวัลการศึกษา (ได้รับการยกเว้นภาษี)
-  | 'investment'          // เงินปันผล / กำไรจากการลงทุน
-  | 'other';              // รายรับอื่นๆ
+  | 'allowance' // ค่าขนม / เงินสนับสนุนจากครอบครัว (ได้รับการยกเว้นภาษี)
+  | 'scholarship' // ทุนการศึกษา / เงินรางวัลการศึกษา (ได้รับการยกเว้นภาษี)
+  | 'investment' // เงินปันผล / กำไรจากการลงทุน
+  | 'other'; // รายรับอื่นๆ
 
 export interface Transaction {
   id: string;
@@ -142,5 +142,6 @@ export interface ThaiChuayThaiQuota {
   eligibleDiscount: number;
   effectiveDiscount: number;
   effectiveNet: number;
+  isCapped?: boolean;
+  capReason?: 'daily' | 'monthly' | 'both' | null;
 }
-

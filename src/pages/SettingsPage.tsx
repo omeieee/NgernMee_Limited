@@ -15,6 +15,8 @@ import {
   Sparkles,
   CheckCircle,
   AlertCircle,
+  Smartphone,
+  ExternalLink,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -43,7 +45,9 @@ export const SettingsPage: React.FC = () => {
   const { categoriesMap } = useCategories();
 
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
-  const [monthlySalary, setMonthlySalary] = useState(taxConfig.monthly_salary ? String(taxConfig.monthly_salary) : '');
+  const [monthlySalary, setMonthlySalary] = useState(
+    taxConfig.monthly_salary ? String(taxConfig.monthly_salary) : ''
+  );
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -142,7 +146,9 @@ export const SettingsPage: React.FC = () => {
                   เงินเดือนประจำเริ่มต้น (บาท / เดือน)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-3 sm:top-2.5 text-sm font-semibold text-slate-400">฿</span>
+                  <span className="absolute left-3.5 top-3 sm:top-2.5 text-sm font-semibold text-slate-400">
+                    ฿
+                  </span>
                   <input
                     type="number"
                     min="0"
@@ -166,7 +172,11 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit" isLoading={isSaving} className="min-h-[44px] touch-manipulation w-full sm:w-auto">
+              <Button
+                type="submit"
+                isLoading={isSaving}
+                className="min-h-[44px] touch-manipulation w-full sm:w-auto"
+              >
                 บันทึกข้อมูลส่วนตัว
               </Button>
             </div>
@@ -178,7 +188,11 @@ export const SettingsPage: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {theme === 'dark' ? <Moon className="h-5 w-5 text-amber-400" /> : <Sun className="h-5 w-5 text-amber-500" />}
+            {theme === 'dark' ? (
+              <Moon className="h-5 w-5 text-amber-400" />
+            ) : (
+              <Sun className="h-5 w-5 text-amber-500" />
+            )}
             <span>ธีมและการแสดงผล</span>
           </CardTitle>
           <CardDescription>ปรับเปลี่ยนชุดสีของแอปพลิเคชันตามความต้องการ</CardDescription>
@@ -187,15 +201,20 @@ export const SettingsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                โหมดสีปัจจุบัน: {theme === 'dark' ? 'โหมดมืด (Dark Mode)' : 'โหมดสว่าง (Light Mode)'}
+                โหมดสีปัจจุบัน:{' '}
+                {theme === 'dark' ? 'โหมดมืด (Dark Mode)' : 'โหมดสว่าง (Light Mode)'}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 รองรับการถนอมสายตา และการใช้งานในที่แสงน้อย
               </p>
             </div>
             <Button variant="outline" onClick={toggleTheme} className="gap-2">
-              {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4 text-amber-400" />}
-              <span>สลับธีม</span>
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4 text-amber-500" />
+              ) : (
+                <Moon className="h-4 w-4 text-amber-400" />
+              )}
+              <span>สลับ</span>
             </Button>
           </div>
         </CardContent>
@@ -221,7 +240,12 @@ export const SettingsPage: React.FC = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 ส่งออกรายการรายรับและรายจ่ายทั้งหมด {transactions.length} รายการ พร้อมยอดคนละครึ่ง
               </p>
-              <Button variant="outline" size="sm" onClick={handleExportTransactions} className="w-full min-h-[44px] touch-manipulation">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportTransactions}
+                className="w-full min-h-[44px] touch-manipulation"
+              >
                 <Download className="h-4 w-4 mr-1.5" />
                 ดาวน์โหลด CSV รายการ
               </Button>
@@ -234,11 +258,51 @@ export const SettingsPage: React.FC = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 ส่งออกสรุปค่าลดหย่อน เงินได้สุทธิ และการคำนวณขั้นบันไดภาษี ปี {taxConfig.tax_year}
               </p>
-              <Button variant="outline" size="sm" onClick={handleExportTax} className="w-full min-h-[44px] touch-manipulation">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportTax}
+                className="w-full min-h-[44px] touch-manipulation"
+              >
                 <Download className="h-4 w-4 mr-1.5" />
                 ดาวน์โหลด CSV ภาษี
               </Button>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mobile-First Prototype Integration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Smartphone className="h-5 w-5 text-emerald-600" />
+            <span>Mobile-First Prototype (เงินมี จำกัด)</span>
+          </CardTitle>
+          <CardDescription>
+            เชื่อมต่อข้อมูลแบบสองทิศทางกับ prototype_mobile_first.html ผ่าน LocalStorage & Zustand
+            Store
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3.5 border border-slate-200/80 dark:border-slate-800">
+            <div>
+              <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                เปิดหน้าจอต้นแบบสมาร์ตโฟน & แท็บเล็ต
+              </p>
+              <p className="text-[11px] text-slate-400">
+                ทดลองใช้งาน Neomorphic Design System, Thumb-Zone Quick Add และสลับ Day/Night Mode
+              </p>
+            </div>
+            <a
+              href="./prototype_mobile_first.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all touch-manipulation active:scale-95 shrink-0"
+            >
+              <span>เปิด Prototype</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
           </div>
         </CardContent>
       </Card>
@@ -262,7 +326,9 @@ export const SettingsPage: React.FC = () => {
               />
               <div>
                 <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                  {isSupabaseConfigured ? 'เชื่อมต่อ Supabase PostgreSQL สำเร็จ' : 'ใช้งานในโหมด Local Demo Store (ออฟไลน์)'}
+                  {isSupabaseConfigured
+                    ? 'เชื่อมต่อ Supabase PostgreSQL สำเร็จ'
+                    : 'ใช้งานในโหมด Local Demo Store (ออฟไลน์)'}
                 </p>
                 <p className="text-[11px] text-slate-400">
                   {isSupabaseConfigured

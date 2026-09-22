@@ -11,7 +11,8 @@ export const DEMO_USER_ID = 'demo-user-001';
 export const DEMO_PROFILE: Profile = {
   id: DEMO_USER_ID,
   display_name: 'คุณสมชาย มีเงิน',
-  avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  avatar_url:
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
@@ -88,7 +89,10 @@ export function createInitialCategories(userId: string = DEMO_USER_ID): Category
   return categories;
 }
 
-export function createInitialTransactions(userId: string = DEMO_USER_ID, categories: Category[]): Transaction[] {
+export function createInitialTransactions(
+  userId: string = DEMO_USER_ID,
+  categories: Category[]
+): Transaction[] {
   const getCatId = (name: string) => categories.find((c) => c.name === name)?.id || null;
 
   const now = new Date();
@@ -103,20 +107,147 @@ export function createInitialTransactions(userId: string = DEMO_USER_ID, categor
   const d3 = `${year}-${month}-${pad(Math.max(1, now.getDate() - 3))}`;
   const d4 = `${year}-${month}-01`;
 
-  const foodDaily = getCatId('อาหารประจำวัน') || getCatId('อาหาร');
-  const foodSpecial = getCatId('มื้อพิเศษ / บุฟเฟต์') || getCatId('อาหาร');
-  const coffeeCat = getCatId('ของว่าง / เครื่องดื่ม') || getCatId('อาหาร');
-  const fuelCat = getCatId('ค่าน้ำมันรถ') || getCatId('เดินทาง');
-  const trainCat = getCatId('รถไฟฟ้า / ขนส่งสาธารณะ') || getCatId('เดินทาง');
+  const foodDaily =
+    getCatId('อาหารประจำวัน') || getCatId('อาหารและเครื่องดื่ม') || getCatId('อาหาร');
+  const foodSpecial =
+    getCatId('มื้อพิเศษ / บุฟเฟต์') || getCatId('อาหารและเครื่องดื่ม') || getCatId('อาหาร');
+  const coffeeCat =
+    getCatId('ของว่าง / เครื่องดื่ม') || getCatId('อาหารและเครื่องดื่ม') || getCatId('อาหาร');
+  const fuelCat = getCatId('ค่าน้ำมันรถ') || getCatId('การเดินทาง') || getCatId('เดินทาง');
+  const trainCat =
+    getCatId('รถไฟฟ้า / ขนส่งสาธารณะ') || getCatId('การเดินทาง') || getCatId('เดินทาง');
   const rentCat = getCatId('ค่าเช่าห้อง / ผ่อนบ้าน') || getCatId('ที่อยู่อาศัย');
   const salaryCat = getCatId('เงินเดือน');
   const freelanceCat = getCatId('งานพาร์ทไทม์ / สอนพิเศษ') || getCatId('งานฟรีแลนซ์ / รายได้เสริม');
   const allowanceCat = getCatId('เงินจากครอบครัว / ค่าขนม') || getCatId('ของขวัญ / โบนัส');
 
-  const foodDiscount = calculateDiscount(120);
-  const coffeeDiscount = calculateDiscount(80, foodDiscount.effectiveDiscount, foodDiscount.effectiveDiscount);
-
   return [
+    {
+      id: generateId(),
+      user_id: userId,
+      category_id: foodDaily,
+      type: 'expense',
+      amount: 60,
+      gross_amount: 60,
+      description: 'ข้าวราดแกงป้าพร',
+      transaction_date: todayStr,
+      is_salary: false,
+      is_thai_chuay_thai: false,
+      thai_chuay_thai_discount: 0,
+      net_amount: 60,
+      metadata: {
+        note: 'มื้อเที่ยง',
+        time: '12:30 น.',
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: generateId(),
+      user_id: userId,
+      category_id: trainCat,
+      type: 'expense',
+      amount: 35,
+      gross_amount: 35,
+      description: 'BTS สายสีเขียว ชิดลม-สยาม',
+      transaction_date: todayStr,
+      is_salary: false,
+      is_thai_chuay_thai: false,
+      thai_chuay_thai_discount: 0,
+      net_amount: 35,
+      metadata: {
+        note: 'จ่ายเต็ม',
+        time: '08:45 น.',
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: generateId(),
+      user_id: userId,
+      category_id: freelanceCat,
+      type: 'income',
+      amount: 15000,
+      gross_amount: 15000,
+      withholding_tax_rate: 3,
+      withholding_tax_amount: 450,
+      description: 'ค่าออกแบบ UI ระบบ ERP',
+      transaction_date: d1,
+      is_salary: false,
+      income_type: 'freelance_part_time',
+      is_thai_chuay_thai: false,
+      thai_chuay_thai_discount: 0,
+      net_amount: 14550,
+      metadata: {
+        note: 'หักภาษีไว้ ฿450',
+        tax_section: '40(2)',
+        time: '14:00 น.',
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: generateId(),
+      user_id: userId,
+      category_id: salaryCat,
+      type: 'income',
+      amount: 45000,
+      gross_amount: 45000,
+      description: 'เงินเดือนประจำ บ. พัฒนา',
+      transaction_date: d2,
+      is_salary: true,
+      income_type: 'salary',
+      is_thai_chuay_thai: false,
+      thai_chuay_thai_discount: 0,
+      net_amount: 45000,
+      metadata: {
+        note: 'เงินเดือนประจำ',
+        tax_section: '40(1)',
+        time: '09:00 น.',
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: generateId(),
+      user_id: userId,
+      category_id: rentCat,
+      type: 'expense',
+      amount: 6500,
+      gross_amount: 6500,
+      description: 'ค่าเช่าหอพักนักศึกษา / คอนโด',
+      transaction_date: d4,
+      is_salary: false,
+      is_thai_chuay_thai: false,
+      thai_chuay_thai_discount: 0,
+      net_amount: 6500,
+      metadata: {
+        note: 'จ่ายเต็ม',
+        time: '10:00 น.',
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: generateId(),
+      user_id: userId,
+      category_id: fuelCat,
+      type: 'expense',
+      amount: 1000,
+      gross_amount: 1000,
+      description: 'เติมน้ำมันเต็มถัง',
+      transaction_date: d3,
+      is_salary: false,
+      is_thai_chuay_thai: false,
+      thai_chuay_thai_discount: 0,
+      net_amount: 1000,
+      metadata: {
+        note: 'จ่ายเต็ม',
+        time: '18:15 น.',
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
     {
       id: generateId(),
       user_id: userId,
@@ -131,134 +262,6 @@ export function createInitialTransactions(userId: string = DEMO_USER_ID, categor
       is_thai_chuay_thai: false,
       thai_chuay_thai_discount: 0,
       net_amount: 8000,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      user_id: userId,
-      category_id: freelanceCat,
-      type: 'income',
-      amount: 6000,
-      gross_amount: 6000,
-      withholding_tax_rate: 3,
-      withholding_tax_amount: 180,
-      description: 'ค่าสอนพิเศษภาษาอังกฤษ (หัก 3%)',
-      transaction_date: d2,
-      is_salary: false,
-      income_type: 'freelance_part_time',
-      is_thai_chuay_thai: false,
-      thai_chuay_thai_discount: 0,
-      net_amount: 5820,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      user_id: userId,
-      category_id: freelanceCat,
-      type: 'income',
-      amount: 4500,
-      gross_amount: 4500,
-      withholding_tax_rate: 3,
-      withholding_tax_amount: 135,
-      description: 'ค่าจ้างออกแบบกราฟิกพาร์ทไทม์',
-      transaction_date: d3,
-      is_salary: false,
-      income_type: 'freelance_part_time',
-      is_thai_chuay_thai: false,
-      thai_chuay_thai_discount: 0,
-      net_amount: 4365,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      user_id: userId,
-      category_id: rentCat,
-      type: 'expense',
-      amount: 6500,
-      description: 'ค่าเช่าหอพักนักศึกษา / คอนโด',
-      transaction_date: d4,
-      is_salary: false,
-      is_thai_chuay_thai: false,
-      thai_chuay_thai_discount: 0,
-      net_amount: 6500,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      user_id: userId,
-      category_id: foodDaily,
-      type: 'expense',
-      amount: 120,
-      description: 'ข้าวกะเพราหมูกรอบไข่ดาว',
-      transaction_date: todayStr,
-      is_salary: false,
-      is_thai_chuay_thai: true,
-      thai_chuay_thai_discount: foodDiscount.effectiveDiscount,
-      net_amount: foodDiscount.netAmount,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      user_id: userId,
-      category_id: coffeeCat,
-      type: 'expense',
-      amount: 80,
-      description: 'อเมริกาโน่เย็น ไม่หวาน',
-      transaction_date: todayStr,
-      is_salary: false,
-      is_thai_chuay_thai: true,
-      thai_chuay_thai_discount: coffeeDiscount.effectiveDiscount,
-      net_amount: coffeeDiscount.netAmount,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      user_id: userId,
-      category_id: fuelCat,
-      type: 'expense',
-      amount: 1000,
-      description: 'เติมน้ำมันเต็มถัง',
-      transaction_date: d1,
-      is_salary: false,
-      is_thai_chuay_thai: false,
-      thai_chuay_thai_discount: 0,
-      net_amount: 1000,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      user_id: userId,
-      category_id: trainCat,
-      type: 'expense',
-      amount: 124,
-      description: 'ค่ารถไฟฟ้า BTS ไป-กลับ',
-      transaction_date: d1,
-      is_salary: false,
-      is_thai_chuay_thai: false,
-      thai_chuay_thai_discount: 0,
-      net_amount: 124,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      user_id: userId,
-      category_id: foodSpecial,
-      type: 'expense',
-      amount: 899,
-      description: 'ชาบูสุกี้ตี๋น้อยกับเพื่อน',
-      transaction_date: d3,
-      is_salary: false,
-      is_thai_chuay_thai: false,
-      thai_chuay_thai_discount: 0,
-      net_amount: 899,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },

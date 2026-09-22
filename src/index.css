@@ -1,35 +1,35 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   /* Day Mode: Warm Minimal Neutrals from 10-Tone Palette (ถนอมสายตา ไม่แสบตา) */
-  --color-slate-50: #FAF6EE;   /* Light Canvas: Warm Linen Cream */
-  --color-slate-100: #F2EBE1;  /* Light Neutral Pill / Surface */
-  --color-slate-200: #E4DCD1;  /* Light Greige Border */
-  --color-slate-300: #D1C7BA;  /* Warm Divider */
+  --color-slate-50: #faf6ee; /* Light Canvas: Warm Linen Cream */
+  --color-slate-100: #f2ebe1; /* Light Neutral Pill / Surface */
+  --color-slate-200: #e4dcd1; /* Light Greige Border */
+  --color-slate-300: #d1c7ba; /* Warm Divider */
 
   /* Dark Mode: Extracted directly from User Reference Screenshot */
-  --color-slate-400: #9E9689;  /* Soft Muted Label Text (#9E9689) */
-  --color-slate-500: #766F63;  /* Secondary Label Text */
-  --color-slate-600: #524C43;
-  --color-slate-700: #38332C;  /* Inactive Numbers / Dark Input Border */
-  --color-slate-800: #26231C;  /* Card Border & Inactive Container (#26231C) */
-  --color-slate-900: #16140F;  /* Card & Sidebar Dark Surface (#16140F) */
-  --color-slate-950: #0D0C0B;  /* Main Canvas Background (#0D0C0B Deep Obsidian) */
+  --color-slate-400: #9e9689; /* Soft Muted Label Text (#9E9689) */
+  --color-slate-500: #766f63; /* Secondary Label Text */
+  --color-slate-600: #524c43;
+  --color-slate-700: #38332c; /* Inactive Numbers / Dark Input Border */
+  --color-slate-800: #26231c; /* Card Border & Inactive Container (#26231C) */
+  --color-slate-900: #16140f; /* Card & Sidebar Dark Surface (#16140F) */
+  --color-slate-950: #0d0c0b; /* Main Canvas Background (#0D0C0B Deep Obsidian) */
 
   /* Prominent Button: Electric Mint Jade Green (from reference screenshot #3BB974) */
-  --color-emerald-50: #EBF8F1;
-  --color-emerald-100: #D0F2E0;
-  --color-emerald-200: #A5E5C2;
-  --color-emerald-300: #74D4A1;
-  --color-emerald-400: #4EC786;
-  --color-emerald-500: #3BB974;  /* Vibrant Jade Green (สีเด่นจากรูปภาพ) */
-  --color-emerald-600: #34A866;  /* Primary Button Default (คมชัด ไม่ซีด) */
-  --color-emerald-700: #298A51;  /* Hover */
-  --color-emerald-800: #1E6D3E;  /* Active */
-  --color-emerald-900: #16522E;
-  --color-emerald-950: #003016;  /* Active Sidebar Container (#003016 from screenshot) */
+  --color-emerald-50: #ebf8f1;
+  --color-emerald-100: #d0f2e0;
+  --color-emerald-200: #a5e5c2;
+  --color-emerald-300: #74d4a1;
+  --color-emerald-400: #4ec786;
+  --color-emerald-500: #3bb974; /* Vibrant Jade Green (สีเด่นจากรูปภาพ) */
+  --color-emerald-600: #34a866; /* Primary Button Default (คมชัด ไม่ซีด) */
+  --color-emerald-700: #298a51; /* Hover */
+  --color-emerald-800: #1e6d3e; /* Active */
+  --color-emerald-900: #16522e;
+  --color-emerald-950: #003016; /* Active Sidebar Container (#003016 from screenshot) */
 }
 
 @layer base {
@@ -81,20 +81,28 @@
 }
 
 body {
-  font-family: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Prompt',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   margin: 0;
   padding: 0;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #FAF6EE;
-  color: #0F172A;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  background-color: #faf6ee;
+  color: #0f172a;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 html.dark body {
-  background-color: #0D0C0B;
-  color: #FDFBF7;
+  background-color: #0d0c0b;
+  color: #fdfbf7;
 }
 
 /* Subtle, minimalist scrollbar */
@@ -121,13 +129,18 @@ html.dark body {
   -webkit-tap-highlight-color: transparent;
 }
 
-button, a, input, select, textarea, [role="button"] {
+button,
+a,
+input,
+select,
+textarea,
+[role='button'] {
   touch-action: manipulation;
 }
 
 /* Prevent iOS Safari from auto-zooming into inputs when focused */
 @media screen and (max-width: 767px) {
-  input:not([type="checkbox"]):not([type="radio"]),
+  input:not([type='checkbox']):not([type='radio']),
   select,
   textarea {
     font-size: 16px !important;
@@ -199,3 +212,163 @@ button, a, input, select, textarea, [role="button"] {
   }
 }
 
+/* ======================================================== */
+/* NEOMORPHIC & TOUCH TOKENS (PROTOTYPE_STYLE_GUIDE.md)    */
+/* ======================================================== */
+.neo-card {
+  box-shadow:
+    0 10px 25px -4px rgba(0, 0, 0, 0.65),
+    0 4px 10px -2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html:not(.dark) .neo-card {
+  box-shadow:
+    6px 10px 26px -4px rgba(185, 175, 155, 0.3),
+    -6px -6px 20px 0 rgba(255, 255, 255, 0.95),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+}
+
+.neo-btn {
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  transition:
+    transform 0.14s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.14s ease;
+  touch-action: manipulation;
+}
+.neo-btn:active {
+  transform: scale(0.95);
+}
+
+.neo-sunken {
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.65),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.04);
+}
+html:not(.dark) .neo-sunken {
+  box-shadow:
+    inset 2px 3px 6px rgba(185, 175, 155, 0.3),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+}
+
+.glow-brand {
+  box-shadow: 0 10px 28px -4px rgba(34, 197, 94, 0.35);
+}
+html:not(.dark) .glow-brand {
+  box-shadow: 0 10px 28px -4px rgba(22, 163, 74, 0.25);
+}
+
+.glow-expense {
+  box-shadow: 0 10px 28px -4px rgba(244, 63, 94, 0.3);
+}
+html:not(.dark) .glow-expense {
+  box-shadow: 0 10px 28px -4px rgba(220, 38, 38, 0.2);
+}
+
+.glow-financial-surplus {
+  box-shadow:
+    0 12px 32px -4px rgba(34, 197, 94, 0.35),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+}
+html:not(.dark) .glow-financial-surplus {
+  box-shadow:
+    8px 12px 28px -4px rgba(22, 163, 74, 0.22),
+    -6px -6px 20px 0 rgba(255, 255, 255, 0.9),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+}
+
+.glow-financial-deficit {
+  box-shadow:
+    0 12px 32px -4px rgba(244, 63, 94, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+html:not(.dark) .glow-financial-deficit {
+  box-shadow:
+    8px 12px 28px -4px rgba(220, 38, 38, 0.18),
+    -6px -6px 20px 0 rgba(255, 255, 255, 0.9),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+}
+
+.ambient-glow-surplus {
+  background: rgba(34, 197, 94, 0.25);
+}
+html:not(.dark) .ambient-glow-surplus {
+  background: rgba(22, 163, 74, 0.18);
+}
+
+.ambient-glow-deficit {
+  background: rgba(244, 63, 94, 0.2);
+}
+html:not(.dark) .ambient-glow-deficit {
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.theme-hero {
+  background: linear-gradient(135deg, #181b24 0%, #111319 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+html:not(.dark) .theme-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #faf9f6 100%);
+  border-color: #e6e3da;
+}
+
+.theme-surface {
+  background-color: #16181f;
+  border-color: #232732;
+}
+html:not(.dark) .theme-surface {
+  background-color: #ffffff;
+  border-color: #e6e3da;
+}
+
+.theme-badge {
+  background-color: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.28);
+  color: #4ade80;
+}
+html:not(.dark) .theme-badge {
+  background-color: #e8f7ee;
+  border-color: #bbf0cc;
+  color: #15803d;
+}
+
+.theme-accent-text {
+  color: #4ade80;
+}
+html:not(.dark) .theme-accent-text {
+  color: #15803d;
+}
+
+.theme-accent-bg {
+  background-color: #22c55e;
+}
+html:not(.dark) .theme-accent-bg {
+  background-color: #16a34a;
+}
+
+.theme-expense-text {
+  color: #f43f5e;
+}
+html:not(.dark) .theme-expense-text {
+  color: #dc2626;
+}
+
+.smooth-tap {
+  transition:
+    transform 0.16s cubic-bezier(0.2, 0.8, 0.4, 1),
+    opacity 0.16s ease;
+  touch-action: manipulation;
+}
+.smooth-tap:active {
+  transform: scale(0.96);
+}
+
+.num-tabular {
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+  font-family: 'Inter', sans-serif;
+}

@@ -48,13 +48,13 @@ export const AVAILABLE_ICONS = [
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
   {
-    name: 'อาหาร',
+    name: 'อาหารและเครื่องดื่ม',
     icon: 'utensils',
     color: '#f97316',
     subcategories: ['อาหารประจำวัน', 'ของว่าง / เครื่องดื่ม', 'มื้อพิเศษ / บุฟเฟต์'],
   },
   {
-    name: 'เดินทาง',
+    name: 'การเดินทาง',
     icon: 'car',
     color: '#3b82f6',
     subcategories: ['ค่าน้ำมันรถ', 'รถไฟฟ้า / ขนส่งสาธารณะ', 'ที่จอดรถ / ค่าทางด่วน'],

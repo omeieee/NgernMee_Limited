@@ -1,4 +1,4 @@
-﻿# NgernMee Limited — Project Rules & Architecture Guidelines
+# NgernMee Limited — Project Rules & Architecture Guidelines
 
 ## 1. Overview & Tech Stack
 
@@ -44,7 +44,7 @@
 - **State Management**: Centralize all shared state in `useAppStore.ts`; access slices via specific Zustand selectors to prevent unnecessary re-renders.
 - **Data Mutations**: Trigger asynchronous persistence through store actions; apply updates optimistically before synchronizing with Supabase.
 - **Form Handling & Validation**: Use `react-hook-form` paired with `zod` schemas for form validation, ensuring strict input validation before store dispatch.
-- **Styling Standards**: Apply Tailwind utility classes combined via `cn()`; maintain dual-theme support using `.dark` root styling and semantic color tokens.
+- **Styling Standards**: Apply Tailwind utility classes combined via `cn()`; maintain dual-theme support using `.dark` root styling and semantic color tokens. Always consult and adhere to [PROTOTYPE_STYLE_GUIDE.md](./PROTOTYPE_STYLE_GUIDE.md) before making UX/UI design, styling, or component adjustments.
 - **Icon Standards**: Use `lucide-react` with standardized sizes (`h-4 w-4` / `h-5 w-5`) and consistent color tokens matching `src/lib/constants.ts`.
 - **Thai Localization**:
   - Currency: Always format monetary amounts using `formatCurrency()` with the Thai Baht symbol (`฿`).

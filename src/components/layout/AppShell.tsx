@@ -12,7 +12,10 @@ import { APP_NAME } from '../../lib/constants';
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/': { title: 'แดชบอร์ดภาพรวม', subtitle: 'สรุปการเงิน รายรับ-รายจ่าย และสิทธิประโยชน์' },
-  '/transactions': { title: 'รายการบันทึก', subtitle: 'จัดการรายรับ รายจ่าย และระบบคนละครึ่ง/ไทยช่วยไทย' },
+  '/transactions': {
+    title: 'รายการบันทึก',
+    subtitle: 'จัดการรายรับ รายจ่าย และระบบคนละครึ่ง/ไทยช่วยไทย',
+  },
   '/categories': { title: 'จัดการหมวดหมู่', subtitle: 'จัดระเบียบหมวดหมู่แบบลำดับขั้นไม่จำกัด' },
   '/reports': { title: 'รายงานและวิเคราะห์', subtitle: 'สรุปข้อมูล แนวโน้ม และพฤติกรรมการใช้จ่าย' },
   '/tax': { title: 'คำนวณและวางแผนภาษี', subtitle: 'ภาษีเงินได้บุคคลธรรมดา ปี 2568 - 2569' },
@@ -22,13 +25,16 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 export const AppShell: React.FC = () => {
   const location = useLocation();
   const currentPath = location.pathname;
-  const currentInfo = PAGE_TITLES[currentPath] || { title: APP_NAME, subtitle: 'ระบบการเงินส่วนบุคคล' };
+  const currentInfo = PAGE_TITLES[currentPath] || {
+    title: APP_NAME,
+    subtitle: 'ระบบการเงินส่วนบุคคล',
+  };
   const { theme, toggleTheme } = useAppStore();
   const { isDemoMode } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 flex">
+    <div className="min-h-screen bg-[#f5f4ef] text-slate-900 dark:bg-[#0f1115] dark:text-slate-50 flex transition-colors">
       {/* Sidebar: Fixed on desktop/iPad Pro landscape (>=1024px), Slide-out Drawer on iPad portrait & mobile (<1024px) */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
@@ -36,12 +42,28 @@ export const AppShell: React.FC = () => {
       <div className="flex-1 lg:pl-64 flex flex-col min-h-screen w-full min-w-0">
         {/* Top Navbar */}
         <header className="sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] items-center justify-between border-b border-slate-200/70 bg-white/90 px-3.5 sm:px-6 lg:px-8 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/90 transition-colors">
-          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-            {/* Hamburger Menu Toggle on iPad & Mobile */}
+          {/* Mobile Brand (screens < 768px adhering to PROTOTYPE_STYLE_GUIDE.md) */}
+          <div className="flex items-center gap-2.5 min-w-0 md:hidden">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-xs shrink-0">
+              <Coins className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="font-bold text-sm text-slate-900 dark:text-white tracking-tight truncate block">
+                {APP_NAME}
+              </span>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                {currentInfo.title}
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop/Tablet Breadcrumb & Title (screens >= 768px) */}
+          <div className="hidden md:flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            {/* Hamburger Menu Toggle on iPad */}
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors touch-manipulation active:scale-95"
+              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors touch-manipulation active:scale-95 cursor-pointer"
               title="เปิดเมนูนำทาง"
               aria-label="เปิดเมนูนำทาง"
             >
@@ -78,7 +100,11 @@ export const AppShell: React.FC = () => {
               title="สลับโหมดสี"
               aria-label="สลับโหมดสี"
             >
-              {theme === 'dark' ? <Moon className="h-4 w-4 text-amber-400" /> : <Sun className="h-4 w-4 text-amber-500" />}
+              {theme === 'dark' ? (
+                <Moon className="h-4 w-4 text-amber-400" />
+              ) : (
+                <Sun className="h-4 w-4 text-amber-500" />
+              )}
             </button>
 
             {/* Settings shortcut */}
@@ -104,4 +130,3 @@ export const AppShell: React.FC = () => {
     </div>
   );
 };
-
