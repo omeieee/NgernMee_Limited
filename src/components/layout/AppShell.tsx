@@ -52,7 +52,7 @@ export const AppShell: React.FC = () => {
                 {APP_NAME}
               </span>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                {currentInfo.title}
+                {currentPath === '/' ? 'การเงินส่วนบุคคล & ภาษี' : currentInfo.title}
               </p>
             </div>
           </div>

@@ -119,19 +119,9 @@ export const DashboardPage: React.FC = () => {
       {/* MOBILE VIEW (< 768px): Style A: Daily Pulse UX/UI        */}
       {/* ======================================================== */}
       <div className="block md:hidden space-y-4">
-        {/* Subtle Mobile Greeting Header */}
-        <div className="flex items-center justify-between px-0.5">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-              สวัสดี,{' '}
-              {profile?.display_name ||
-                (isDemoMode ? 'คุณสมชาย' : user?.email?.split('@')[0] || 'ผู้ใช้งาน')}{' '}
-              👋
-            </h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              {formatThaiDate(todayStr, 'long')}
-            </p>
-          </div>
+        {/* Subtle Mobile Context Bar (Date & Demo Mode) */}
+        <div className="flex items-center justify-between px-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+          <span>{formatThaiDate(todayStr, 'long')}</span>
           {isDemoMode && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 text-[10px] font-bold border border-amber-500/20">
               โหมดทดลอง
