@@ -2,6 +2,7 @@
 // Mobile Transaction Detail Receipt Modal matching prototype_mobile_first.html (#tx-detail-modal)
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, Receipt, Edit2, Trash2 } from 'lucide-react';
 import { formatCurrency, formatThaiDate, cn } from '../../lib/utils';
 import type { Transaction, Category } from '../../lib/types';
@@ -30,14 +31,14 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   const catName = category?.name || 'ทั่วไป';
   const catColor = category?.color || (isExpense ? '#f43f5e' : '#10b981');
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="theme-surface relative rounded-3xl border border-slate-200/80 dark:border-white/[0.1] p-5 max-w-sm w-full shadow-2xl neo-card z-10 space-y-3">
+      <div className="theme-surface relative rounded-3xl border border-slate-200/80 dark:border-white/[0.1] p-5 max-w-sm w-full shadow-2xl neo-card z-10 space-y-3 animate-modal-in">
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg theme-badge border flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 flex items-center justify-center">
               <Receipt className="w-4 h-4" />
             </div>
             <h3 className="text-xs font-bold text-slate-900 dark:text-white">
@@ -69,7 +70,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 isExpense ? 'text-slate-900 dark:text-white' : 'theme-accent-text'
               )}
             >
-              {isExpense ? '-' : '+'}
+              {isExpense ? '- ' : '+ '}
               {formatCurrency(transaction.net_amount, true)}
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full mt-2 theme-badge border whitespace-nowrap">
@@ -180,6 +181,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

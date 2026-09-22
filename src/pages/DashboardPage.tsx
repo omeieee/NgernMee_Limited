@@ -32,6 +32,7 @@ import { TransactionForm } from '../components/transactions/TransactionForm';
 import { QuickTransactionSheet } from '../components/transactions/QuickTransactionSheet';
 import { TransactionDetailModal } from '../components/transactions/TransactionDetailModal';
 import { useAppStore } from '../stores/useAppStore';
+import { useToastStore } from '../stores/useToastStore';
 import { useCategories } from '../hooks/useCategories';
 import { useThaiChuayThai } from '../hooks/useThaiChuayThai';
 import { calculateDashboardStats } from '../packages/financial-intelligence';
@@ -53,6 +54,7 @@ export const DashboardPage: React.FC = () => {
   } = useAppStore();
   const { categoriesMap } = useCategories();
   const { quota } = useThaiChuayThai();
+  const { showToast } = useToastStore();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [mobileSheetType, setMobileSheetType] = useState<TransactionType>('expense');
@@ -1099,6 +1101,7 @@ export const DashboardPage: React.FC = () => {
         }}
         onDelete={async (tx) => {
           await deleteTransaction(tx.id);
+          showToast('ลบรายการสำเร็จ', `รายการ "${tx.description}" ถูกลบเรียบร้อยแล้ว`);
           setSelectedTxForDetail(null);
         }}
       />

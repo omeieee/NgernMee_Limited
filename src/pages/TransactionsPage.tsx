@@ -12,6 +12,7 @@ import { QuickSelectPanel } from '../components/transactions/QuickSelectPanel';
 import { TransactionList } from '../components/transactions/TransactionList';
 import { TransactionDetailModal } from '../components/transactions/TransactionDetailModal';
 import { QuickTransactionSheet } from '../components/transactions/QuickTransactionSheet';
+import { useToastStore } from '../stores/useToastStore';
 import { useTransactions, type TransactionFilter } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { formatCurrency, formatThaiDate, cn } from '../lib/utils';
@@ -69,13 +70,17 @@ export const TransactionsPage: React.FC = () => {
     setIsFormModalOpen(true);
   };
 
+  const { showToast } = useToastStore();
+
   const handleFormSubmit = async (
     data: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>
   ) => {
     if (editingTransaction) {
       await updateTransaction(editingTransaction.id, data);
+      showToast('แก้ไขรายการสำเร็จ!', `บันทึกการเปลี่ยนแปลง "${data.description}" เรียบร้อยแล้ว`);
     } else {
       await addTransaction(data);
+      showToast('บันทึกรายการสำเร็จ!', `${data.description} บันทึกเรียบร้อย`);
     }
     setIsFormModalOpen(false);
   };
@@ -83,6 +88,7 @@ export const TransactionsPage: React.FC = () => {
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     await deleteTransaction(deleteTarget.id);
+    showToast('ลบรายการสำเร็จ', `รายการ "${deleteTarget.description}" ถูกลบเรียบร้อยแล้ว`);
     setDeleteTarget(null);
   };
 
@@ -314,11 +320,11 @@ export const TransactionsPage: React.FC = () => {
                                   {formatCurrency(tx.amount, true)}
                                 </span>
                               )}
-                              {tx.withholding_tax_amount && tx.withholding_tax_amount > 0 && (
+                              {tx.withholding_tax_amount && tx.withholding_tax_amount > 0 ? (
                                 <span className="text-[9px] text-indigo-500 num-tabular block whitespace-nowrap">
                                   หัก {formatCurrency(tx.withholding_tax_amount)}
                                 </span>
-                              )}
+                              ) : null}
                             </div>
 
                             {/* Touch action buttons */}

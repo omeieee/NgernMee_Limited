@@ -6,6 +6,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { Settings, ShieldCheck, Sun, Moon, Coins, Menu, Calculator, Wallet } from 'lucide-react';
+import { Toast } from '../ui/Toast';
 import { useAppStore } from '../../stores/useAppStore';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_NAME } from '../../lib/constants';
@@ -165,6 +166,9 @@ export const AppShell: React.FC = () => {
 
       {/* Mobile Bottom Navigation (screens < 768px) */}
       <BottomNav />
+
+      {/* Global Action Toast (Micro-Interactions) */}
+      <Toast />
     </div>
   );
 };

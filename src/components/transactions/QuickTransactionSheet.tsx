@@ -2,6 +2,7 @@
 // Mobile-first Quick Transaction Bottom Sheet adhering 100% to prototype_mobile_first.html (#quick-add-sheet) and Screenshot 2026-09-22 200228.png
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   ArrowDownRight,
@@ -18,6 +19,7 @@ import {
   Calculator,
 } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
+import { useToastStore } from '../../stores/useToastStore';
 import { useCategories } from '../../hooks/useCategories';
 import { intakeTransaction, extractDescriptionSuggestions } from '../../packages/transaction-draft';
 import { CategoryIcon } from '../ui/CategoryIcon';
@@ -43,6 +45,7 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
 }) => {
   const { transactions, addTransaction, updateTransaction, getThaiChuayThaiStatus } = useAppStore();
   const { categories, categoriesMap } = useCategories();
+  const { showToast } = useToastStore();
 
   const isEditing = Boolean(editingTransaction);
 
@@ -185,8 +188,17 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
     try {
       if (isEditing && editingTransaction) {
         await updateTransaction(editingTransaction.id, result.payload);
+        showToast(
+          'แก้ไขรายการสำเร็จ!',
+          `บันทึกการเปลี่ยนแปลง "${result.payload.description}" เรียบร้อยแล้ว`
+        );
       } else {
         await addTransaction(result.payload);
+        const netPay = result.payload.net_amount;
+        showToast(
+          'บันทึกรายการสำเร็จ!',
+          `${result.payload.description} (${result.payload.type === 'income' ? '+' : '-'}฿${netPay.toFixed(2)}) บันทึกเรียบร้อย`
+        );
       }
       onSuccess?.();
       onClose();
@@ -198,7 +210,9 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
     }
   };
 
-  return (
+  if (!isOpen) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center md:hidden animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
@@ -207,8 +221,8 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
         aria-hidden="true"
       />
 
-      {/* Bottom Sheet Card */}
-      <div className="relative w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-[#16181f] border-t border-slate-200/80 dark:border-white/10 p-5 shadow-2xl z-10 space-y-3.5 touch-scroll pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))]">
+      {/* Bottom Sheet Card with Smooth Slide-Up Animation */}
+      <div className="relative w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-[#16181f] border-t border-slate-200/80 dark:border-white/10 p-5 shadow-2xl z-10 space-y-3.5 touch-scroll pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] animate-sheet-up">
         {/* Pull Handle */}
         <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-2" />
 
@@ -675,6 +689,7 @@ export const QuickTransactionSheet: React.FC<QuickTransactionSheetProps> = ({
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
